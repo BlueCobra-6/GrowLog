@@ -196,6 +196,96 @@ function dueItems(){
   return out;
 }
 
+const STARTER_CSV=`name,variety,germ_days,harvest_days,yield_oz,cut,window_days,emoji,note
+Parsley,Curled,8,27,1.6,yes,90,🌿,Estimate based on Rise Darki parsley
+Parsley,Plain leaved,8,30,1.6,yes,90,🌿,Estimate
+Parsley,Darki,8,27,1.6,yes,90,🌿,Rise product page
+Coriander,,7,30,1.5,yes,30,🌿,Estimate
+Dill,,7,35,1.5,yes,30,🌿,Estimate
+Lettuce,Butterhead,7,27,3.5,no,21,🥬,Rise product page
+Lettuce,Cos,5,30,3.5,no,21,🥬,Estimate
+Lettuce,Buttercrunch,7,30,3.5,no,21,🥬,Estimate - check Rise app
+Lettuce,Little Gem,5,30,3.5,no,21,🥬,Estimate
+Lettuce,Iceberg,7,45,4,no,14,🥬,Estimate
+Lettuce,Bronze Arrowhead,5,28,3.5,no,21,🥬,Estimate
+Lettuce,Baby Romaine,5,25,3.5,no,21,🥬,Rise Red Romaine page - check Rise app
+Rocket,,7,27,3.5,no,14,🥬,Rise Mild Arugula numbers
+Spinach,,7,30,3,no,14,🥬,Estimate
+Chives,,10,60,2,yes,90,🌿,Estimate
+Spring onion,,8,45,3,no,30,🧅,Estimate
+Bean,French,8,50,5,yes,60,🫘,Estimate
+Cucumber,Snack,5,50,8,yes,60,🥒,Estimate
+Pepper,Galaxy bell,7,85,6,yes,90,🫑,Estimate
+Celery,,10,55,5,yes,45,🥬,Estimate
+Basil,Italian,8,47,3,yes,90,🌿,Based on Rise Genovese timeline
+Basil,Holy,7,42,1.8,yes,90,🌿,Rise product page (Kapoor Tulsi)
+Basil,Genovese,8,47,3,yes,90,🌿,Rise product page timeline
+Kale,Starbor,5,42,6.3,yes,90,🥬,Rise product page
+Mint,Peppermint,10,45,3,yes,90,🍃,Estimate
+Catnip,,10,45,3,yes,90,🌿,Estimate
+Thyme,Summer,14,60,1,yes,90,🌿,Estimate
+Cilantro,Santo,7,30,1.5,yes,30,🌿,Estimate
+`;
+
+/* ============ crop import ============ */
+const ckey=(n,v)=>(String(n||'')+'|'+String(v||'')).toLowerCase().replace(/[^a-z0-9|]/g,'');
+function parseDelimited(text,delim){
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===delim){row.push(f);f=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}
+    else f+=ch}
+  row.push(f);rows.push(row);
+  return rows.filter(r=>r.some(c=>c.trim()));
+}
+const HDR={name:'name',crop:'name',plant:'name',variety:'variety',cultivar:'variety',germ:'germ',germ_days:'germ',germinate:'germ',germination:'germ',
+  harvest:'harvest',harvest_days:'harvest',days_to_harvest:'harvest',yield:'yield',yield_oz:'yield',cut:'cut',regrow:'cut',cut_and_regrow:'cut',
+  window:'window',window_days:'window',emoji:'emoji',icon:'emoji',note:'note',notes:'note'};
+const DEFAULT_COLS=['name','variety','germ','harvest','yield','cut','window','emoji','note'];
+function guessEmoji(n){n=(n||'').toLowerCase();
+  const m=[[/lettuce|romaine|kale|spinach|celery|rocket|arugula|chard|pac/,'🥬'],[/basil|parsley|dill|thyme|cilantro|coriander|chive|sage|oregano|catnip/,'🌿'],[/mint/,'🍃'],[/chili|chile|jalape/,'🌶️'],[/pepper/,'🫑'],[/bean|pea/,'🫘'],[/cucumber/,'🥒'],[/onion|garlic|leek/,'🧅'],[/tomato/,'🍅'],[/strawberr/,'🍓'],[/carrot/,'🥕'],[/flower|marigold|zinnia|borage|nasturtium/,'🌸']];
+  for(const [re,e] of m)if(re.test(n))return e;return'🌱'}
+function parseCrops(text){
+  text=(text||'').trim();
+  if(!text)return{rows:[],bad:0};
+  let recs=[];
+  if(text[0]==='['||text[0]==='{'){
+    try{let j=JSON.parse(text);if(!Array.isArray(j))j=j.crops||[j];recs=j.map(o=>{const r={};for(const k in o){const m=HDR[k.toLowerCase()];if(m)r[m]=o[k]}return r})}
+    catch(e){return{rows:[],bad:0,error:'Could not read that as JSON'}}
+  }else{
+    const first=text.split(/\r?\n/)[0];
+    const delim=first.includes('\t')?'\t':(first.includes(';')&&!first.includes(',')?';':',');
+    const grid=parseDelimited(text,delim);
+    let cols=DEFAULT_COLS,start=0;
+    const h=grid[0].map(c=>c.trim().toLowerCase().replace(/[\s-]+/g,'_'));
+    if(h.some(c=>HDR[c]==='name')&&h.some(c=>['germ','harvest','yield','variety'].includes(HDR[c]))){cols=h.map(c=>HDR[c]||null);start=1}
+    recs=grid.slice(start).map(r=>{const o={};r.forEach((v,i)=>{if(cols[i])o[cols[i]]=v.trim()});return o});
+  }
+  const rows=[];let bad=0;const seen=new Set();
+  for(const r of recs){
+    const name=String(r.name||'').trim();const harvest=num(r.harvest,0);
+    if(!name||harvest<=0){bad++;continue}
+    const cut=/^(y|yes|true|1|x)$/i.test(String(r.cut??'').trim());
+    const c={name,variety:String(r.variety||'').trim(),emoji:String(r.emoji||'').trim()||guessEmoji(name),
+      germ:Math.max(0,Math.round(num(r.germ,7))),harvest:Math.round(harvest),yield:num(r.yield,3),cut,
+      window:r.window!==undefined&&String(r.window).trim()!==''?Math.round(num(r.window,30)):(cut?90:30),note:String(r.note||'').trim()};
+    const k=ckey(c.name,c.variety);if(seen.has(k))continue;seen.add(k);
+    c.exists=db.crops.find(x=>ckey(x.name,x.variety)===k)||null;
+    rows.push(c);
+  }
+  return{rows,bad};
+}
+function impPreview(){
+  const P=parseCrops(S.text);
+  if(P.error)return`<div class="warn">${P.error}</div>`;
+  if(!P.rows.length)return`<div class="empty-note">Paste crops or load the starter set.</div>`;
+  const nNew=P.rows.filter(r=>!r.exists).length,nEx=P.rows.length-nNew;
+  return `<div class="sub" style="margin:6px 0"><b>${nNew}</b> new · <b>${nEx}</b> already in your library${nEx?(S.update?' (will be updated)':' (will be skipped)'):''}${P.bad?` · ${P.bad} skipped (missing name or harvest days)`:''}</div>
+  <div class="pick">${P.rows.map(r=>`<div class="crow"><span class="em">${r.emoji}</span><span class="grow1"><b>${esc(r.name)}</b>${r.variety?' · '+esc(r.variety):''}<br><span class="sub">${r.germ}d germinate · ${r.harvest}d harvest · ${r.yield} oz${r.note?' · '+esc(r.note):''}</span></span><span class="pill ${r.exists?'':'grow'}">${r.exists?'exists':'new'}</span></div>`).join('')}</div>`;
+}
+
 /* ============ UI state ============ */
 const ui={tab:'garden',kind:'all',moving:null};
 let S=null; // current sheet state
@@ -270,7 +360,7 @@ function dueView(){
 function cropsView(){
   const list=[...db.crops].sort((a,b)=>(b.fav-a.fav)||a.name.localeCompare(b.name)||a.variety.localeCompare(b.variety));
   return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')
-   +`<button class="btn" data-act="newCrop">＋ New crop / variety</button>`;
+   +`<div class="btns"><button class="btn" data-act="newCrop">＋ New crop</button><button class="btn sec" data-act="importCrops">⬇️ Import crops</button></div>`;
 }
 
 function logView(){
@@ -383,6 +473,19 @@ const SHEETS={
    <label>Notes</label><input type="text" value="${esc(c.note||'')}" data-bind="cf" data-f="note">
    <div class="btns" style="grid-template-columns:${S.id?'1fr 2fr':'1fr'}">${S.id?`<button class="btn danger" data-act="delCrop">Delete</button>`:''}<button class="btn" data-act="saveCrop">Save</button></div>`;
  },
+ /* ---- crop import ---- */
+ import(){
+  return `<h2>Import crops</h2>
+   <div class="sub">Adds crop types (with germinate/harvest days and yield) to your library. Paste from a spreadsheet or load a file.</div>
+   <div class="btns" style="grid-template-columns:1fr"><button class="btn" data-act="loadStarter">🌿 Load my Rise starter set (28 crops)</button></div>
+   <label>Or paste rows (CSV, tab-separated, or JSON)</label>
+   <textarea rows="4" data-bind="imptext" placeholder="name, variety, germ_days, harvest_days, yield_oz, cut, window_days, emoji, note">${esc(S.text)}</textarea>
+   <div class="btns"><button class="btn sec small" data-act="impFile">Choose file…</button><button class="btn sec small" data-act="exportCrops">Export my crops</button></div>
+   <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${S.update?'checked':''} data-bind="impupdate"> Update crops that already exist (overwrites their numbers)</label>
+   <div id="impPreview">${impPreview()}</div>
+   <div style="margin-top:10px"><button class="btn" data-act="doImport">Import</button></div>
+   <div class="sub" style="margin-top:8px">Columns: name, variety, germ_days, harvest_days, yield_oz, cut (yes/no), window_days, emoji, note. A header row is optional. Only name and harvest_days are required.</div>`;
+ },
  /* ---- section editor ---- */
  section(){
   const g=curGarden(),s=g.sections.find(x=>x.id===S.sid);if(!s)return'<h2>Gone</h2>';
@@ -489,6 +592,33 @@ const acts={
   if(!confirm('Delete this crop?'))return;
   mutate(()=>{db.crops=db.crops.filter(c=>c.id!==S.id);closeSheet()});
  },
+ /* crop import */
+ importCrops(){openSheet({type:'import',text:'',update:false})},
+ loadStarter(){S.text=STARTER_CSV;renderSheet()},
+ impFile(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.csv,.tsv,.txt,.json,text/csv,text/plain,application/json';
+  inp.onchange=()=>{const f=inp.files[0];if(f)f.text().then(t=>{if(S&&S.type==='import'){S.text=t;renderSheet()}})};
+  inp.click();
+ },
+ doImport(){
+  const P=parseCrops(S.text);if(!P.rows.length){toast('Nothing to import');return}
+  let added=0,upd=0;
+  mutate(()=>{
+    for(const r of P.rows){
+      const {exists,...c}=r;
+      if(exists){if(S.update){Object.assign(exists,c);upd++}}
+      else{db.crops.push({...c,id:uid(),fav:false});added++}
+    }
+    closeSheet();
+  });
+  toast(`Imported ${added} new${upd?`, updated ${upd}`:''}`);
+ },
+ exportCrops(){
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const rows=[['name','variety','germ_days','harvest_days','yield_oz','cut','window_days','emoji','note'],...db.crops.map(c=>[c.name,c.variety,c.germ,c.harvest,c.yield,c.cut?'yes':'no',c.window,c.emoji,c.note||''])];
+  const blob=new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`growlog-crops-${today()}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+ },
  /* sections / containers */
  newSection(){openSheet({type:'newsection',name:'',kind:'tray',layout:'pods8'})},
  doNewSection(){
@@ -562,6 +692,8 @@ const binds={
  q(el){S.q=el.value;const q=S.q.toLowerCase();const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
    const list=db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q)).sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
    $('#pickList').innerHTML=pickList(list)},
+ imptext(el){S.text=el.value;$('#impPreview').innerHTML=impPreview()},
+ impupdate(el){S.update=el.checked;$('#impPreview').innerHTML=impPreview()},
  pdate(el){S.date=el.value||today()},
  fill(el){S.fill=el.checked;renderSheet()},
  hoz(el){S.oz=el.value},hdate(el){S.date=el.value||today()},hclear(el){S.clear=el.checked},

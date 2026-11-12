@@ -1,0 +1,29 @@
+name,variety,germ_days,harvest_days,yield_oz,cut,window_days,emoji,note
+Parsley,Curled,8,27,1.6,yes,90,🌿,Estimate based on Rise Darki parsley
+Parsley,Plain leaved,8,30,1.6,yes,90,🌿,Estimate
+Parsley,Darki,8,27,1.6,yes,90,🌿,Rise product page
+Coriander,,7,30,1.5,yes,30,🌿,Estimate
+Dill,,7,35,1.5,yes,30,🌿,Estimate
+Lettuce,Butterhead,7,27,3.5,no,21,🥬,Rise product page
+Lettuce,Cos,5,30,3.5,no,21,🥬,Estimate
+Lettuce,Buttercrunch,7,30,3.5,no,21,🥬,Estimate - check Rise app
+Lettuce,Little Gem,5,30,3.5,no,21,🥬,Estimate
+Lettuce,Iceberg,7,45,4,no,14,🥬,Estimate
+Lettuce,Bronze Arrowhead,5,28,3.5,no,21,🥬,Estimate
+Lettuce,Baby Romaine,5,25,3.5,no,21,🥬,Rise Red Romaine page - check Rise app
+Rocket,,7,27,3.5,no,14,🥬,Rise Mild Arugula numbers
+Spinach,,7,30,3,no,14,🥬,Estimate
+Chives,,10,60,2,yes,90,🌿,Estimate
+Spring onion,,8,45,3,no,30,🧅,Estimate
+Bean,French,8,50,5,yes,60,🫘,Estimate
+Cucumber,Snack,5,50,8,yes,60,🥒,Estimate
+Pepper,Galaxy bell,7,85,6,yes,90,🫑,Estimate
+Celery,,10,55,5,yes,45,🥬,Estimate
+Basil,Italian,8,47,3,yes,90,🌿,Based on Rise Genovese timeline
+Basil,Holy,7,42,1.8,yes,90,🌿,Rise product page (Kapoor Tulsi)
+Basil,Genovese,8,47,3,yes,90,🌿,Rise product page timeline
+Kale,Starbor,5,42,6.3,yes,90,🥬,Rise product page
+Mint,Peppermint,10,45,3,yes,90,🍃,Estimate
+Catnip,,10,45,3,yes,90,🌿,Estimate
+Thyme,Summer,14,60,1,yes,90,🌿,Estimate
+Cilantro,Santo,7,30,1.5,yes,30,🌿,Estimate
