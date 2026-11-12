@@ -197,34 +197,103 @@ function dueItems(){
 }
 
 const STARTER_CSV=`name,variety,germ_days,harvest_days,yield_oz,cut,window_days,emoji,note
-Parsley,Curled,8,27,1.6,yes,90,🌿,Estimate based on Rise Darki parsley
-Parsley,Plain leaved,8,30,1.6,yes,90,🌿,Estimate
-Parsley,Darki,8,27,1.6,yes,90,🌿,Rise product page
-Coriander,,7,30,1.5,yes,30,🌿,Estimate
-Dill,,7,35,1.5,yes,30,🌿,Estimate
-Lettuce,Butterhead,7,27,3.5,no,21,🥬,Rise product page
-Lettuce,Cos,5,30,3.5,no,21,🥬,Estimate
-Lettuce,Buttercrunch,7,30,3.5,no,21,🥬,Estimate - check Rise app
-Lettuce,Little Gem,5,30,3.5,no,21,🥬,Estimate
-Lettuce,Iceberg,7,45,4,no,14,🥬,Estimate
-Lettuce,Bronze Arrowhead,5,28,3.5,no,21,🥬,Estimate
-Lettuce,Baby Romaine,5,25,3.5,no,21,🥬,Rise Red Romaine page - check Rise app
-Rocket,,7,27,3.5,no,14,🥬,Rise Mild Arugula numbers
-Spinach,,7,30,3,no,14,🥬,Estimate
-Chives,,10,60,2,yes,90,🌿,Estimate
-Spring onion,,8,45,3,no,30,🧅,Estimate
-Bean,French,8,50,5,yes,60,🫘,Estimate
-Cucumber,Snack,5,50,8,yes,60,🥒,Estimate
-Pepper,Galaxy bell,7,85,6,yes,90,🫑,Estimate
-Celery,,10,55,5,yes,45,🥬,Estimate
-Basil,Italian,8,47,3,yes,90,🌿,Based on Rise Genovese timeline
+Kale,Scarlet,7,50,6.3,yes,60,🥬,Rise product page
+Kale,Starbor,5,42,6.3,yes,60,🥬,Rise product page
+Kale,Mini,10,53,6.3,yes,60,🥬,Rise product page
+Collards,Top Bunch,5,42,7.1,yes,60,🥬,Rise product page
+Cabbage,China King,5,50,8.8,yes,60,🥬,Rise product page
+Cabbage,Caraflex,5,50,8.8,yes,60,🥬,Rise product page
+Cabbage,Red Omero,5,50,7.1,yes,60,🥬,Rise product page
+Chard,Bright Lights,7,39,3.5,yes,60,🥬,Rise product page
+Chinese Broccoli,Early Jade,7,50,3.5,yes,60,🥬,Rise product page
+Broccoli Raab,Sweet,7,50,7.1,yes,60,🥬,Rise product page
+Tatsoi,Classic,12,50,3.5,yes,60,🥬,Rise product page
+Tatsoi,Red Cloud,12,50,3.5,yes,60,🥬,Rise product page
+Pak Choi,Toy Choy,12,45,3.5,yes,60,🥬,Rise product page
+Pak Choi,Red,12,45,3.5,yes,60,🥬,Rise product page
+Endive,Benefine,5,45,3.5,yes,60,🥬,Rise product page
+Sorrel,Red Veined,10,50,1.8,yes,60,🥬,Rise product page
+Arugula,Mild,7,27,3.5,yes,60,🥬,Rise product page
+Arugula,Astro,5,15,3.5,yes,60,🥬,Rise product page
+Rocket,,7,27,3.5,yes,60,🥬,Rise Wild Rocket page had no numbers - using Mild Arugula
+Lettuce,Red Oakleaf,7,27,3.5,yes,45,🥬,Rise product page
+Lettuce,Alfresco Mix,5,25,3.5,yes,45,🥬,Rise product page
+Lettuce,Red Romaine,5,25,3.5,yes,45,🥬,Rise product page
+Lettuce,Baby Romaine,5,25,3.5,yes,45,🥬,Rise product page
+Lettuce,Bronze Arrowhead,5,25,3.5,yes,45,🥬,Rise product page
+Lettuce,Butterhead,7,27,3.5,yes,45,🥬,Rise product page
+Lettuce,Butter Crunch,5,20,3.5,yes,45,🥬,Rise product page
+Lettuce,Cos,5,25,3.5,yes,45,🥬,Rise Parris Island Cos page
+Lettuce,Iceberg,5,25,3.5,yes,45,🥬,Rise product page
+Lettuce,Little Gem,5,25,3.5,yes,45,🥬,Estimate - using other Rise lettuces
+Spinach,,7,30,3,yes,60,🥬,Estimate
+Spinach,Red Malabar,7,55,4.2,yes,60,🥬,Rise product page
+Basil,Genovese,8,47,1.8,yes,90,🌿,Rise product page
+Basil,Italian,8,47,1.8,yes,90,🌿,Estimate - Genovese numbers
 Basil,Holy,7,42,1.8,yes,90,🌿,Rise product page (Kapoor Tulsi)
-Basil,Genovese,8,47,3,yes,90,🌿,Rise product page timeline
-Kale,Starbor,5,42,6.3,yes,90,🥬,Rise product page
-Mint,Peppermint,10,45,3,yes,90,🍃,Estimate
-Catnip,,10,45,3,yes,90,🌿,Estimate
-Thyme,Summer,14,60,1,yes,90,🌿,Estimate
-Cilantro,Santo,7,30,1.5,yes,30,🌿,Estimate
+Basil,Purple,7,42,1.8,yes,90,🌿,Rise product page
+Basil,Lime,7,42,1.8,yes,90,🌿,Rise product page
+Cilantro,Santo,8,26,1.4,yes,90,🌿,Rise product page
+Coriander,,8,26,1.4,yes,90,🌿,Estimate - Santo cilantro numbers
+Parsley,Forest Green,8,27,1.6,yes,90,🌿,Rise product page
+Parsley,Darki,8,27,1.6,yes,90,🌿,Rise product page
+Parsley,Curled,8,27,1.6,yes,90,🌿,Estimate - Darki numbers
+Parsley,Plain leaved,8,27,1.6,yes,90,🌿,Estimate - Forest Green numbers
+Dill,Fernleaf,14,45,1.1,yes,90,🌿,Rise product page
+Dill,,14,45,1.1,yes,90,🌿,Estimate - Fernleaf numbers
+Chives,Red Baron,10,30,1.2,yes,90,🌿,Rise product page
+Chives,,10,30,1.2,yes,90,🌿,Estimate - Red Baron numbers
+Spring onion,,8,45,3,no,21,🧅,Estimate
+Mint,Peppermint,7,50,1.1,yes,90,🍃,Rise product page
+Mint,Mojito,12,50,1.4,yes,90,🍃,Rise product page
+Catnip,,10,45,3,yes,90,🍃,Estimate
+Thyme,Summer,10,45,0.5,yes,90,🌿,Rise product page
+Oregano,Greek,14,45,1.2,yes,90,🌿,Rise product page
+Rosemary,Classic,14,49,1.2,yes,90,🌿,Rise product page
+Sage,Classic,14,49,0.9,yes,90,🌿,Rise product page
+Tarragon,European,12,50,1.1,yes,90,🌿,Rise product page
+Celery,,10,55,5,yes,60,🥬,Estimate
+Tomato,Kitchen Mini Siam,7,105,14.1,no,30,🍅,Rise product page
+Tomato,Heartbreakers Dora Orange,7,100,10.6,no,30,🍅,Rise product page
+Pepper,Snackable Red,7,93,8.8,yes,90,🫑,Rise page - yield not listed (estimated)
+Pepper,Jalapeno,7,93,10.6,yes,90,🌶️,Rise product page
+Pepper,Hot Lemon,7,93,7.1,no,30,🌶️,Rise product page
+Pepper,Fresh Bite Orange,7,93,8.8,yes,90,🫑,Rise product page
+Pepper,Shishito,10,72,10.6,yes,90,🌶️,Rise product page
+Pepper,Gochujang,10,72,8.8,yes,90,🌶️,Rise product page
+Pepper,Banana,7,93,8.8,yes,90,🌶️,Rise product page
+Pepper,Mamba Sweet Red,7,65,8.8,no,30,🫑,Rise product page
+Pepper,Galaxy bell,7,65,8.8,no,30,🫑,Estimate - Mamba bell numbers
+Eggplant,Patio Baby,7,55,10.6,yes,90,🍆,Rise product page
+Strawberry,Everbearing,14,105,3.5,yes,90,🍓,Rise product page
+Cucumber,Dasher II,7,80,7.1,yes,90,🥒,Rise product page
+Cucumber,Cocktail,14,70,10.6,yes,90,🥒,Rise product page
+Cucumber,Snack,7,80,7.1,yes,90,🥒,Estimate - Dasher II numbers
+Pumpkin,Mini,14,110,7.1,no,30,🎃,Rise product page
+Pea,Dwarf Grey Sugar Snap,7,60,3.0,yes,90,🫘,Rise product page
+Pea,Patio Pride,8,36,4.2,yes,90,🫘,Rise product page
+Bean,Mascotte,8,55,7.1,yes,90,🫘,Rise product page
+Bean,Dragon's Tongue,8,55,7.1,yes,90,🫘,Rise product page
+Bean,French,8,55,7.1,yes,90,🫘,Estimate - Mascotte numbers
+Radish,Easter Egg,5,25,3.5,no,21,🌱,Rise product page
+Radish,Sora,5,27,1.8,no,21,🌱,Rise product page
+Radish,Nero Tondo,5,23,3.5,no,21,🌱,Rise product page
+Beet,Touchstone Gold,5,50,7.1,no,21,🌱,Rise product page
+Beet,Chioggia,5,50,7.1,no,21,🌱,Rise product page
+Turnip,Hakurei,5,45,7.1,no,21,🌱,Rise product page
+Cauliflower,Baby,7,65,5.3,no,30,🥦,Rise product page
+Sunflower,Sunny Smile,10,55,0.5,no,21,🌸,Rise product page
+Marigold,Mexican Mint,10,80,0.5,yes,90,🍃,Rise product page
+Marigold,Durango Outback,10,50,0.7,yes,90,🌸,Rise product page
+Baby's Breath,,14,45,0.7,no,21,🌸,Rise product page
+Chamomile,German,5,75,0.5,yes,90,🌸,Rise product page
+Borage,Butterfly Friend,12,55,0.7,yes,90,🌸,Rise product page
+Poppy,Yellow,21,52,0.7,yes,90,🌸,Rise product page
+Lavender,Vicenza Blue Apex,12,100,0.7,yes,90,🌸,Rise product page
+Microgreens,Broccoli,3,14,0.9,no,7,🌱,Rise product page
+Microgreens,Kohlrabi Purple,3,14,0.9,no,7,🌱,Rise product page
+Microgreens,Radish Red Rambo,3,14,0.9,no,7,🌱,Rise product page
+Microgreens,Basil Lemon,5,18,0.9,no,7,🌱,Rise product page
 `;
 
 /* ============ crop import ============ */
@@ -477,7 +546,7 @@ const SHEETS={
  import(){
   return `<h2>Import crops</h2>
    <div class="sub">Adds crop types (with germinate/harvest days and yield) to your library. Paste from a spreadsheet or load a file.</div>
-   <div class="btns" style="grid-template-columns:1fr"><button class="btn" data-act="loadStarter">🌿 Load my Rise starter set (28 crops)</button></div>
+   <div class="btns" style="grid-template-columns:1fr"><button class="btn" data-act="loadStarter">🌿 Load full Rise catalog (97 crops)</button></div>
    <label>Or paste rows (CSV, tab-separated, or JSON)</label>
    <textarea rows="4" data-bind="imptext" placeholder="name, variety, germ_days, harvest_days, yield_oz, cut, window_days, emoji, note">${esc(S.text)}</textarea>
    <div class="btns"><button class="btn sec small" data-act="impFile">Choose file…</button><button class="btn sec small" data-act="exportCrops">Export my crops</button></div>
@@ -594,7 +663,7 @@ const acts={
  },
  /* crop import */
  importCrops(){openSheet({type:'import',text:'',update:false})},
- loadStarter(){S.text=STARTER_CSV;renderSheet()},
+ loadStarter(){S.text=STARTER_CSV;S.update=true;renderSheet()},
  impFile(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.csv,.tsv,.txt,.json,text/csv,text/plain,application/json';
   inp.onchange=()=>{const f=inp.files[0];if(f)f.text().then(t=>{if(S&&S.type==='import'){S.text=t;renderSheet()}})};
