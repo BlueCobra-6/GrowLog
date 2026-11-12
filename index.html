@@ -483,16 +483,31 @@ function mutate(fn){fn();save();refresh()}
 
 const EMOJIS=['🌱','🌿','🥬','🥕','🍅','🌶️','🫑','🫘','🥒','🍓','🧅','🧄','🥦','🍆','🌽','🥔','🍋','🌸','🍃','🌾'];
 
+const CATS=['Herb','Lettuce','Leafy green','Fruiting','Root & other veg','Flower','Microgreen'];
+function catOf(c){if(c.cat)return c.cat;const n=(c.name||'').toLowerCase();
+ if(/microgreen/.test(n))return'Microgreen';
+ if(/^(lettuce|endive)/.test(n))return'Lettuce';
+ if(/basil|cilantro|coriander|parsley|dill|chive|spring onion|mint|catnip|thyme|oregano|rosemary|sage|tarragon|sorrel|borage|chamomile|lavender/.test(n))return(/borage|chamomile|lavender/.test(n)?'Herb':'Herb');
+ if(/sunflower|marigold|baby.s breath|poppy|flower/.test(n))return'Flower';
+ if(/tomato|pepper|eggplant|strawberry|cucumber|pumpkin|pea\b|bean/.test(n))return'Fruiting';
+ if(/radish|beet|turnip|cauliflower|celery/.test(n))return'Root & other veg';
+ return'Leafy green'}
+function cropList(){
+ const q=(S.q||'').toLowerCase(),f=S.f||'recent',cat=S.cat||'';
+ const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
+ return db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q)
+   &&(f==='all'||q||(f==='fav'&&c.fav)||(f==='recent'&&used[c.id]))
+   &&(!cat||catOf(c)===cat))
+  .sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
+}
 const SHEETS={
  /* ---- pick a crop to plant ---- */
  plant(){
-  const q=(S.q||'').toLowerCase();
-  const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
-  const list=db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q))
-    .sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
+  const list=cropList();
   const free=emptySlots(S.cid).length;
   return `<h2>What do you want to plant?</h2><div class="sub">${esc(locLabelC(S.cid,S.i))}</div>
    <input type="search" placeholder="Search crops…" value="${esc(S.q||'')}" data-bind="q" style="margin-top:10px">
+   <div class="chips" style="margin:10px 0 6px">${[['recent','Used before'],['fav','💛 Favorites'],['all','All']].map(([k,l])=>`<button class="chip ${(S.f||'recent')===k?'on':''}" data-act="pickFilter" data-f="${k}">${l}</button>`).join('')}<select data-bind="pcat" style="width:auto;flex:1;min-width:110px"><option value="">All categories</option>${CATS.map(c=>`<option ${S.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
    <div class="pick" id="pickList">${pickList(list)}</div>
    <button class="btn sec small" data-act="newCrop" style="margin-bottom:6px">＋ New crop / variety</button>
    <label>Planted on</label><input type="date" value="${S.date}" max="${today()}" data-bind="pdate">
@@ -595,7 +610,7 @@ const SHEETS={
 function sibIdx(g,s,d){const i=g.sections.indexOf(s);for(let j=i+d;j>=0&&j<g.sections.length;j+=d)if(ui.kind==='all'||g.sections[j].kind===s.kind)return j;return -1}
 function locLabelC(cid,i){const L=locOf(cid);return L?[L.g.name,L.s.name,L.c.name,'#'+(i+1)].filter(Boolean).join(' › '):''}
 function pickList(list){
-  if(!list.length)return`<div class="empty-note">No match - add a new crop below.</div>`;
+  if(!list.length)return`<div class="empty-note">Nothing here - try "All" or add a new crop below.</div>`;
   return list.map(c=>`<button class="crow ${S.sel===c.id?'sel':''}" style="width:100%;text-align:left" data-act="selCrop" data-id="${c.id}"><span class="em">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">${c.germ}d germinate · ${c.harvest}d harvest</span></span>${c.fav?'💛':''}</button>`).join('');
 }
 
@@ -618,7 +633,7 @@ const acts={
     return;
   }
   if(p)return openSheet({type:'detail',pid:p.id});
-  openSheet({type:'plant',cid,i,sel:null,q:'',date:today(),fill:false});
+  openSheet({type:'plant',cid,i,sel:null,q:'',f:db.plantings.length?'recent':'all',cat:'',date:today(),fill:false});
  },
  selCrop(el){S.sel=el.dataset.id;renderSheet()},
  doPlant(){
@@ -706,6 +721,7 @@ const acts={
   mutate(()=>{curGarden().sections.push(mkSection(S.name.trim(),S.kind,S.kind==='nursery'&&S.layout.startsWith('pods')?'nur4':S.layout,S.kind==='nursery'?'':'Tray 1'));closeSheet()});
  },
  editSection(el){openSheet({type:'section',sid:el.dataset.s,newlay:'pods8'})},
+ pickFilter(el){S.f=el.dataset.f;renderSheet()},
  reorderToggle(){ui.reorder=!ui.reorder;if(ui.reorder)ui.moving=null;render()},
  moveSecD(el){
   const g=curGarden(),s=g.sections.find(x=>x.id===el.dataset.s),j=sibIdx(g,s,+el.dataset.d);if(j<0)return;
@@ -785,9 +801,8 @@ const acts={
 /* ============ input bindings ============ */
 const binds={
  garden(el){db.active=el.value;save();render()},
- q(el){S.q=el.value;const q=S.q.toLowerCase();const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
-   const list=db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q)).sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
-   $('#pickList').innerHTML=pickList(list)},
+ q(el){S.q=el.value;$('#pickList').innerHTML=pickList(cropList())},
+ pcat(el){S.cat=el.value;renderSheet()},
  imptext(el){S.text=el.value;$('#impPreview').innerHTML=impPreview()},
  impupdate(el){S.update=el.checked;$('#impPreview').innerHTML=impPreview()},
  pdate(el){S.date=el.value||today()},
