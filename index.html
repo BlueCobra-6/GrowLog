@@ -450,7 +450,7 @@ function logView(){
 function moreView(){
   const lb=db.meta.lastBackup;
   let h=`<h3 style="margin-bottom:8px">Gardens</h3>`;
-  h+=db.gardens.map(g=>`<div class="card row2"><span class="grow1"><b>${esc(g.name)}</b><br><span class="sub">${g.sections.length} sections</span></span><button class="btn sec small" data-act="editGarden" data-g="${g.id}">Edit</button></div>`).join('');
+  h+=db.gardens.map((g,i)=>`<div class="card row2"><span class="grow1"><b>${esc(g.name)}</b><br><span class="sub">${g.sections.length} sections</span></span><button class="btn sec small" data-act="moveGarden" data-g="${g.id}" data-d="-1" ${i===0?'disabled style="opacity:.4"':''} aria-label="Move garden up">▲</button><button class="btn sec small" data-act="moveGarden" data-g="${g.id}" data-d="1" ${i===db.gardens.length-1?'disabled style="opacity:.4"':''} aria-label="Move garden down">▼</button><button class="btn sec small" data-act="editGarden" data-g="${g.id}">Edit</button></div>`).join('');
   h+=`<button class="btn sec" data-act="newGarden">＋ Add garden / location</button>`;
   h+=`<h3 style="margin:20px 0 8px">Back up your data</h3><div class="card"><div class="sub" style="margin-bottom:8px">Everything is stored on this device. ${lb?`Last backup: ${niceY(lb)}.`:'<b>No backup yet.</b>'}</div>
   <div class="btns"><button class="btn small" data-act="exportJSON">Download backup</button><button class="btn sec small" data-act="importJSON">Restore backup</button><button class="btn sec small" data-act="copyJSON">Copy backup text</button><button class="btn sec small" data-act="exportCSV">Export CSV</button></div></div>`;
@@ -561,8 +561,10 @@ const SHEETS={
   const lay=(sel)=>Object.entries(LAYOUTS).map(([k,v])=>`<option value="${k}" ${sel===k?'selected':''}>${v.label}</option>`).join('');
   return `<h2>Edit ${esc(s.name)}</h2>
    <label>Name</label><input type="text" value="${esc(s.name)}" data-bind="sname">
+   <label>Position in list</label>
+   <div class="two"><button class="btn sec small" data-act="moveSection" data-d="-1" ${sibIdx(g,s,-1)<0?'disabled style="opacity:.4"':''}>▲ Move up</button><button class="btn sec small" data-act="moveSection" data-d="1" ${sibIdx(g,s,1)<0?'disabled style="opacity:.4"':''}>▼ Move down</button></div>
    <label>Trays / containers</label>
-   ${s.containers.map(c=>`<div class="card" style="padding:8px"><div class="two"><input type="text" value="${esc(c.name)}" placeholder="(name)" data-bind="cname" data-id="${c.id}"><select data-bind="clay" data-id="${c.id}">${lay(c.layout)}</select></div><button class="btn danger small" style="margin-top:6px" data-act="delContainer" data-id="${c.id}">Remove tray</button></div>`).join('')}
+   ${s.containers.map((c,i)=>`<div class="card" style="padding:8px"><div class="two"><input type="text" value="${esc(c.name)}" placeholder="(name)" data-bind="cname" data-id="${c.id}"><select data-bind="clay" data-id="${c.id}">${lay(c.layout)}</select></div><div class="row2" style="margin-top:6px"><button class="btn sec small" data-act="moveContainer" data-id="${c.id}" data-d="-1" ${i===0?'disabled style="opacity:.4"':''} aria-label="Move tray up">▲</button><button class="btn sec small" data-act="moveContainer" data-id="${c.id}" data-d="1" ${i===s.containers.length-1?'disabled style="opacity:.4"':''} aria-label="Move tray down">▼</button><span class="grow1"></span><button class="btn danger small" data-act="delContainer" data-id="${c.id}">Remove tray</button></div></div>`).join('')}
    <div class="two" style="margin:8px 0"><select data-bind="newlay">${lay(S.newlay||'pods8')}</select><button class="btn sec" data-act="addContainer">＋ Add tray</button></div>
    <div class="btns" style="margin-top:14px"><button class="btn danger" data-act="delSection">Delete section</button><button class="btn" data-act="closeSheet">Done</button></div>`;
  },
@@ -582,6 +584,8 @@ const SHEETS={
    <div style="margin-top:14px"><button class="btn" data-act="doNewGarden">Add</button></div>`;
  }
 };
+// index of the nearest section of the same kind in direction d (or -1)
+function sibIdx(g,s,d){const i=g.sections.indexOf(s);for(let j=i+d;j>=0&&j<g.sections.length;j+=d)if(g.sections[j].kind===s.kind)return j;return -1}
 function locLabelC(cid,i){const L=locOf(cid);return L?[L.g.name,L.s.name,L.c.name,'#'+(i+1)].filter(Boolean).join(' › '):''}
 function pickList(list){
   if(!list.length)return`<div class="empty-note">No match - add a new crop below.</div>`;
@@ -695,6 +699,20 @@ const acts={
   mutate(()=>{curGarden().sections.push(mkSection(S.name.trim(),S.kind,S.kind==='nursery'&&S.layout.startsWith('pods')?'nur4':S.layout,S.kind==='nursery'?'':'Tray 1'));closeSheet()});
  },
  editSection(el){openSheet({type:'section',sid:el.dataset.s,newlay:'pods8'})},
+ moveSection(el){
+  const g=curGarden(),s=g.sections.find(x=>x.id===S.sid),j=sibIdx(g,s,+el.dataset.d);if(j<0)return;
+  mutate(()=>{const i=g.sections.indexOf(s);[g.sections[i],g.sections[j]]=[g.sections[j],g.sections[i]]});
+ },
+ moveContainer(el){
+  const s=curGarden().sections.find(x=>x.id===S.sid),i=s.containers.findIndex(c=>c.id===el.dataset.id),j=i+(+el.dataset.d);
+  if(j<0||j>=s.containers.length)return;
+  mutate(()=>{[s.containers[i],s.containers[j]]=[s.containers[j],s.containers[i]]});
+ },
+ moveGarden(el){
+  const i=db.gardens.findIndex(g=>g.id===el.dataset.g),j=i+(+el.dataset.d);
+  if(j<0||j>=db.gardens.length)return;
+  mutate(()=>{[db.gardens[i],db.gardens[j]]=[db.gardens[j],db.gardens[i]]});
+ },
  addContainer(){const s=curGarden().sections.find(x=>x.id===S.sid);mutate(()=>{s.containers.push(mkContainer('Tray '+(s.containers.length+1),S.newlay||'pods8'))})},
  delContainer(el){
   const id=el.dataset.id,n=activeP().filter(p=>p.loc.c===id).length;
