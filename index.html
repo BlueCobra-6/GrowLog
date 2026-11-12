@@ -592,7 +592,7 @@ const SHEETS={
  }
 };
 // index of the nearest section of the same kind in direction d (or -1)
-function sibIdx(g,s,d){const i=g.sections.indexOf(s);for(let j=i+d;j>=0&&j<g.sections.length;j+=d)if(g.sections[j].kind===s.kind)return j;return -1}
+function sibIdx(g,s,d){const i=g.sections.indexOf(s);for(let j=i+d;j>=0&&j<g.sections.length;j+=d)if(ui.kind==='all'||g.sections[j].kind===s.kind)return j;return -1}
 function locLabelC(cid,i){const L=locOf(cid);return L?[L.g.name,L.s.name,L.c.name,'#'+(i+1)].filter(Boolean).join(' › '):''}
 function pickList(list){
   if(!list.length)return`<div class="empty-note">No match - add a new crop below.</div>`;
