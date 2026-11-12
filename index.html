@@ -361,7 +361,7 @@ function impPreview(){
 }
 
 /* ============ UI state ============ */
-const ui={tab:'garden',kind:'all',moving:null,reorder:false};
+const ui={tab:'garden',kind:'all',moving:null,reorder:false,cq:{q:'',f:'all',cat:''}};
 let S=null; // current sheet state
 const TABS=[['garden','🌱','Garden'],['due','⏰','Due'],['crops','🥬','Crops'],['log','📒','Log'],['more','⚙️','More']];
 
@@ -434,9 +434,15 @@ function dueView(){
   return h||`<div class="empty-note">All caught up 🌿<br>Nothing needs attention right now.</div>`;
 }
 
+function cropRows(){
+  const list=cropList(ui.cq).sort((a,b)=>(b.fav-a.fav)||a.name.localeCompare(b.name)||a.variety.localeCompare(b.variety));
+  return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">${catOf(c)} · germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')||`<div class="empty-note">Nothing here - try "All".</div>`;
+}
 function cropsView(){
-  const list=[...db.crops].sort((a,b)=>(b.fav-a.fav)||a.name.localeCompare(b.name)||a.variety.localeCompare(b.variety));
-  return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')
+  const q=ui.cq;
+  return `<input type="search" placeholder="Search crops…" value="${esc(q.q)}" data-bind="ckq">
+   <div class="chips" style="margin:10px 0 8px">${[['all','All'],['fav','💛 Favorites'],['recent','Used before']].map(([k,l])=>`<button class="chip ${q.f===k?'on':''}" data-act="cropFilter" data-f="${k}">${l}</button>`).join('')}<select data-bind="ccat" style="width:auto;flex:1;min-width:110px"><option value="">All categories</option>${CATS.map(c=>`<option ${q.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+   <div id="cropRows">${cropRows()}</div>`
    +`<div class="btns"><button class="btn" data-act="newCrop">＋ New crop</button><button class="btn sec" data-act="importCrops">⬇️ Import crops</button></div>`;
 }
 
@@ -492,8 +498,8 @@ function catOf(c){if(c.cat)return c.cat;const n=(c.name||'').toLowerCase();
  if(/tomato|pepper|eggplant|strawberry|cucumber|pumpkin|pea\b|bean/.test(n))return'Fruiting';
  if(/radish|beet|turnip|cauliflower|celery/.test(n))return'Root & other veg';
  return'Leafy green'}
-function cropList(){
- const q=(S.q||'').toLowerCase(),f=S.f||'recent',cat=S.cat||'';
+function cropList(st){
+ st=st||S;const q=(st.q||'').toLowerCase(),f=st.f||'recent',cat=st.cat||'';
  const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
  return db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q)
    &&(f==='all'||q||(f==='fav'&&c.fav)||(f==='recent'&&used[c.id]))
@@ -721,6 +727,7 @@ const acts={
   mutate(()=>{curGarden().sections.push(mkSection(S.name.trim(),S.kind,S.kind==='nursery'&&S.layout.startsWith('pods')?'nur4':S.layout,S.kind==='nursery'?'':'Tray 1'));closeSheet()});
  },
  editSection(el){openSheet({type:'section',sid:el.dataset.s,newlay:'pods8'})},
+ cropFilter(el){ui.cq.f=el.dataset.f;render()},
  pickFilter(el){S.f=el.dataset.f;renderSheet()},
  reorderToggle(){ui.reorder=!ui.reorder;if(ui.reorder)ui.moving=null;render()},
  moveSecD(el){
@@ -802,6 +809,8 @@ const acts={
 const binds={
  garden(el){db.active=el.value;save();render()},
  q(el){S.q=el.value;$('#pickList').innerHTML=pickList(cropList())},
+ ckq(el){ui.cq.q=el.value;$('#cropRows').innerHTML=cropRows()},
+ ccat(el){ui.cq.cat=el.value;render()},
  pcat(el){S.cat=el.value;renderSheet()},
  imptext(el){S.text=el.value;$('#impPreview').innerHTML=impPreview()},
  impupdate(el){S.update=el.checked;$('#impPreview').innerHTML=impPreview()},
