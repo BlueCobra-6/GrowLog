@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14262b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GrowLog">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>GrowLog</title>
+<style>
+:root{
+  --bg:#14262b;--card:#1d363c;--card2:#244249;--line:#2f525a;--text:#eef4ef;--mute:#9db5b5;
+  --accent:#4ade80;--gold:#f5c451;--orange:#f08a4b;--blue:#6cb6ff;--red:#f06a6a;--ink:#0b1a1d;
+  --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;padding-bottom:calc(72px + var(--safe-b))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3{margin:0;font-weight:650}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding:calc(10px + var(--safe-t)) 14px 8px;border-bottom:1px solid var(--line)}
+.top .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.top h1{font-size:20px}
+select,input[type=text],input[type=number],input[type=date],input[type=search],textarea{
+  background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+.gsel{width:auto;max-width:60%;font-weight:650;font-size:18px;background:transparent;border:0;padding:4px 0}
+.sub{color:var(--mute);font-size:13px}
+main{padding:12px 14px}
+.chips{display:flex;gap:8px;margin:2px 0 12px;flex-wrap:wrap}
+.chip{padding:6px 14px;border-radius:99px;background:var(--card);border:1px solid var(--line);font-size:14px}
+.chip.on{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:600}
+.section{margin:0 0 20px}
+.sechead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sechead h3{font-size:18px}
+.sechead .gear{margin-left:auto;color:var(--mute);padding:4px 8px;font-size:18px}
+.conts{display:flex;gap:10px;flex-wrap:wrap}
+.cont{background:#081a1e;border-radius:14px;padding:8px;border:1px solid var(--line)}
+.cont .cn{font-size:12px;color:var(--mute);margin:0 4px 6px}
+.grid{display:grid;gap:6px;grid-template-columns:repeat(var(--cols),64px)}
+.slot{width:64px;height:64px;border-radius:50%;background:var(--card);color:var(--mute);font-size:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;border:2px solid transparent;position:relative}
+.slot.empty:active{background:var(--card2)}
+.slot .em{font-size:22px}
+.slot .lbl{font-size:9px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.slot .dd{font-size:9px;color:var(--mute)}
+.slot.germ{border-color:var(--blue)}
+.slot.grow{border-color:var(--accent)}
+.slot.ready{border-color:var(--gold);background:#3a3a22}
+.slot.over{border-color:var(--orange);background:#432c20}
+.slot.target{outline:2px dashed var(--accent);outline-offset:2px}
+.slot.moving{opacity:.45}
+.card{background:var(--card);border-radius:14px;padding:12px;margin-bottom:10px;border:1px solid var(--line)}
+.row2{display:flex;align-items:center;gap:10px}
+.grow1{flex:1;min-width:0}
+.big{font-size:28px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#0f1f23;border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + var(--safe-b))}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mute);padding:4px 0;position:relative}
+.tabbar button .ic{font-size:20px}
+.tabbar button.on{color:var(--accent)}
+.badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--gold);color:var(--ink);border-radius:99px;font-size:10px;font-weight:700;padding:0 5px;min-width:16px}
+.banner{position:sticky;top:calc(54px + var(--safe-t));z-index:15;background:var(--accent);color:var(--ink);padding:8px 14px;display:flex;gap:10px;align-items:center;font-size:14px;font-weight:550}
+.banner button{margin-left:auto;background:var(--ink);color:var(--text);border-radius:8px;padding:4px 10px}
+.btn{background:var(--accent);color:var(--ink);font-weight:650;border-radius:12px;padding:12px 16px;width:100%;text-align:center}
+.btn.sec{background:var(--card2);color:var(--text)}
+.btn.danger{background:#5a2b2b;color:#ffd5d5}
+.btn.small{width:auto;padding:8px 12px;font-size:14px;border-radius:10px}
+.btns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+.btns.three{grid-template-columns:repeat(3,1fr)}
+#sheet{position:fixed;inset:0;z-index:50;display:none}
+#sheet.open{display:block}
+#sheet .bd{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+#sheet .sh{position:absolute;left:0;right:0;bottom:0;max-height:92vh;overflow:auto;background:#1a3238;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + var(--safe-b));border-top:1px solid var(--line)}
+.sh h2{font-size:20px;margin-bottom:4px}
+.sh label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+.sh .x{position:absolute;right:12px;top:10px;color:var(--mute);font-size:22px;padding:4px 8px}
+.pick{max-height:38vh;overflow:auto;margin:8px 0;border-radius:12px}
+.crow{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;border:1px solid transparent}
+.crow.sel{background:var(--card2);border-color:var(--accent)}
+.crow .em{font-size:24px;width:32px;text-align:center}
+.bar{height:10px;background:var(--card);border-radius:99px;overflow:hidden;position:relative;margin:8px 0 4px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bar>b{position:absolute;top:0;bottom:0;width:2px;background:var(--blue)}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:650;background:var(--card2)}
+.pill.germ{background:#1d3d5a;color:var(--blue)}.pill.grow{background:#1d4a31;color:var(--accent)}
+.pill.ready{background:#514a1c;color:var(--gold)}.pill.over{background:#59301b;color:var(--orange)}
+.fav{font-size:20px;padding:2px 6px}
+.emo{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.emo button{font-size:22px;padding:4px 6px;border-radius:8px;background:var(--card)}
+.emo button.on{background:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.logline{font-size:13px;color:var(--mute);padding:3px 0;border-bottom:1px dashed var(--line)}
+.empty-note{color:var(--mute);text-align:center;padding:30px 10px}
+.stat{background:var(--card);border-radius:12px;padding:10px;text-align:center;border:1px solid var(--line)}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--mute)}
+#toast{position:fixed;left:50%;top:calc(64px + var(--safe-t));transform:translateX(-50%);background:#eef4ef;color:var(--ink);padding:8px 14px;border-radius:10px;font-size:14px;z-index:99;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+.warn{background:#4a3a1c;border:1px solid var(--gold);color:#ffe9b0;border-radius:12px;padding:10px;margin-bottom:12px;font-size:14px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* ============ helpers ============ */
+const KEY='growlog.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>fmt(new Date());
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const days=(a,b=today())=>Math.round((parse(b)-parse(a))/864e5);
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return fmt(d)};
+const nice=s=>parse(s).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+const niceY=s=>parse(s).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+const ozFmt=oz=>oz>=16?(+(oz/16).toFixed(2))+' lb':(+(+oz).toFixed(1))+' oz';
+const num=(v,d=0)=>{const n=parseFloat(v);return isFinite(n)?n:d};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1800)}
+
+/* ============ model ============ */
+const LAYOUTS={
+  pods12:{label:'12 pods',n:12,cols:3},
+  pods8:{label:'8 pods',n:8,cols:2},
+  holes4:{label:'4 holes',n:4,cols:2},
+  holes2:{label:'2 holes',n:2,cols:1},
+  nur4:{label:'Nursery · 4 slots',n:4,cols:4},
+  nur6:{label:'Nursery · 6 slots',n:6,cols:3}
+};
+const dims=c=>LAYOUTS[c.layout]||LAYOUTS.pods8;
+const mkContainer=(name,layout)=>({id:uid(),name,layout});
+const mkSection=(name,kind,layout,cname='')=>({id:uid(),name,kind,containers:[mkContainer(cname,layout)]});
+function mkGarden(name,template){
+  const g={id:uid(),name,sections:[]};
+  if(template==='trio'){
+    ['Alpha','Bravo','Charlie'].forEach(n=>g.sections.push(mkSection(n,'nursery','nur4')));
+    ['Top level','Middle level','Bottom level'].forEach(n=>{
+      const s=mkSection(n,'tray','pods8','Tray 1');s.containers.push(mkContainer('Tray 2','holes4'));g.sections.push(s);
+    });
+  }
+  return g;
+}
+const SEED_CROPS=[
+  {name:'Radish',variety:'Magnet',emoji:'🌱',germ:10,harvest:60,yield:2.1,cut:false,window:30,note:'Numbers from Rise app'},
+  {name:'Bean',variety:'Mascotte',emoji:'🫘',germ:8,harvest:55,yield:7.1,cut:true,window:60,note:'Numbers from Rise app'},
+  {name:'Basil',variety:'Genovese',emoji:'🌿',germ:5,harvest:35,yield:3,cut:true,window:90,note:'Estimate - edit me'},
+  {name:'Lettuce',variety:'Butter Crunch',emoji:'🥬',germ:4,harvest:40,yield:4,cut:false,window:21,note:'Estimate - edit me'},
+  {name:'Chives',variety:'Staro',emoji:'🌿',germ:10,harvest:60,yield:2,cut:true,window:90,note:'Estimate - edit me'},
+  {name:'Pepper',variety:'Red chili',emoji:'🌶️',germ:10,harvest:90,yield:6,cut:true,window:90,note:'Estimate - edit me'}
+].map(c=>({id:uid(),fav:false,...c}));
+function seed(){
+  const g=mkGarden('Trio','trio');
+  return {v:1,gardens:[g],active:g.id,crops:SEED_CROPS,plantings:[],harvests:[],meta:{lastBackup:null,created:today()}};
+}
+let db=(()=>{try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.gardens&&d.crops)return d}}catch(e){}return seed()})();
+let saveFailed=false;
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(db));saveFailed=false}catch(e){saveFailed=true;toast('⚠️ Could not save - export a backup!')}
+}
+save();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+
+/* ============ queries ============ */
+const curGarden=()=>db.gardens.find(g=>g.id===db.active)||db.gardens[0];
+const crop=id=>db.crops.find(c=>c.id===id)||{id,name:'(deleted crop)',variety:'',emoji:'❔',germ:0,harvest:999,yield:0,window:30};
+const plantAt=(cid,i)=>db.plantings.find(p=>p.status==='active'&&p.loc.c===cid&&p.loc.i===i);
+const activeP=()=>db.plantings.filter(p=>p.status==='active');
+const cname=c=>`${esc(crop(c).name)}${crop(c).variety?' · '+esc(crop(c).variety):''}`;
+function locOf(cid){for(const g of db.gardens)for(const s of g.sections)for(const c of s.containers)if(c.id===cid)return{g,s,c};return null}
+function locLabel(p){const L=locOf(p.loc.c);return L?[L.g.name,L.s.name,L.c.name,'#'+(p.loc.i+1)].filter(Boolean).join(' › '):'(location removed)'}
+function stageOf(p){
+  const c=crop(p.cropId),d=days(p.plantedAt),w=c.window??30;
+  if(d<c.germ)return'germ';if(d<c.harvest)return'grow';if(d<=c.harvest+w)return'ready';return'over';
+}
+const STAGE_LABEL={germ:'Germinating',grow:'Growing',ready:'Ready to harvest',over:'Past harvest window'};
+const logP=(p,t,n='')=>{p.log.push({d:today(),t,n})};
+const emptySlots=cid=>{const L=locOf(cid);if(!L)return[];const out=[];for(let i=0;i<dims(L.c).n;i++)if(!plantAt(cid,i))out.push(i);return out};
+function dueItems(){
+  const out={ready:[],over:[],germ:[],soon:[]};
+  for(const p of activeP()){
+    const c=crop(p.cropId),d=days(p.plantedAt),st=stageOf(p);
+    if(st==='over')out.over.push(p);else if(st==='ready')out.ready.push(p);
+    else if(!p.germinatedAt&&d>=c.germ&&d>0)out.germ.push(p);
+    if(st!=='over'&&st!=='ready'&&c.harvest-d<=7&&c.harvest-d>0)out.soon.push(p);
+  }
+  return out;
+}
+
+/* ============ UI state ============ */
+const ui={tab:'garden',kind:'all',moving:null};
+let S=null; // current sheet state
+const TABS=[['garden','🌱','Garden'],['due','⏰','Due'],['crops','🥬','Crops'],['log','📒','Log'],['more','⚙️','More']];
+
+/* ============ render ============ */
+function render(){
+  const y=window.scrollY;
+  const dueN=(()=>{const d=dueItems();return d.ready.length+d.over.length})();
+  $('#app').innerHTML=header()+banner()+`<main>${view()}</main>`+
+    `<nav class="tabbar">${TABS.map(([k,ic,l])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-k="${k}"><span class="ic">${ic}</span>${l}${k==='due'&&dueN?`<span class="badge">${dueN}</span>`:''}</button>`).join('')}</nav>`;
+  window.scrollTo(0,y);
+}
+function header(){
+  const titles={due:'Needs attention',crops:'Crop library',log:'History',more:'More'};
+  if(ui.tab==='garden'){
+    const a=activeP().filter(p=>locOf(p.loc.c)&&locOf(p.loc.c).g.id===curGarden().id);
+    const ready=a.filter(p=>['ready','over'].includes(stageOf(p))).length;
+    return `<div class="top"><div class="row"><select class="gsel" data-bind="garden">${db.gardens.map(g=>`<option value="${g.id}" ${g.id===curGarden().id?'selected':''}>${esc(g.name)}</option>`).join('')}</select><span class="sub">${a.length} planted${ready?` · ${ready} ready`:''}</span></div></div>`;
+  }
+  return `<div class="top"><div class="row"><h1>${titles[ui.tab]}</h1></div></div>`;
+}
+function banner(){
+  if(!ui.moving)return'';
+  const p=db.plantings.find(x=>x.id===ui.moving);if(!p)return'';
+  const c=crop(p.cropId);
+  return `<div class="banner">Moving ${c.emoji} ${esc(c.name)} - tap a slot (occupied = swap)<button data-act="cancelMove">Cancel</button></div>`;
+}
+function view(){return({garden:gardenView,due:dueView,crops:cropsView,log:logView,more:moreView})[ui.tab]()}
+
+function slotHtml(cid,i){
+  const p=plantAt(cid,i);
+  const mv=ui.moving&&db.plantings.find(x=>x.id===ui.moving);
+  if(!p)return `<button class="slot empty ${mv?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}" aria-label="Empty slot ${i+1}">＋</button>`;
+  const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
+  return `<button class="slot ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span><span class="lbl">${esc(c.name)}</span><span class="dd">D${d}</span></button>`;
+}
+function gardenView(){
+  const g=curGarden();
+  let h=`<div class="chips">${[['all','All'],['nursery','Nurseries'],['tray','Trays']].map(([k,l])=>`<button class="chip ${ui.kind===k?'on':''}" data-act="kind" data-k="${k}">${l}</button>`).join('')}</div>`;
+  if(!db.meta.lastBackup&&activeP().length>=3)h+=`<div class="warn">Your data lives only in this browser. Tap <b>More → Back up</b> now and then.</div>`;
+  const secs=g.sections.filter(s=>ui.kind==='all'||s.kind===ui.kind);
+  if(!secs.length)h+=`<div class="empty-note">Nothing here yet. Add a shelf or nursery below.</div>`;
+  for(const s of secs){
+    const tot=s.containers.reduce((a,c)=>a+dims(c).n,0),used=s.containers.reduce((a,c)=>a+(dims(c).n-emptySlots(c.id).length),0);
+    h+=`<div class="section"><div class="sechead"><h3>${esc(s.name)}</h3><span class="sub">${used}/${tot}</span><button class="gear" data-act="editSection" data-s="${s.id}" aria-label="Edit">✏️</button></div><div class="conts">`;
+    for(const c of s.containers){
+      const D=dims(c);
+      h+=`<div class="cont">${c.name?`<div class="cn">${esc(c.name)} · ${D.label}</div>`:''}<div class="grid" style="--cols:${D.cols}">${Array.from({length:D.n},(_,i)=>slotHtml(c.id,i)).join('')}</div></div>`;
+    }
+    h+=`</div></div>`;
+  }
+  h+=`<button class="btn sec" data-act="newSection">＋ Add shelf / nursery</button>`;
+  return h;
+}
+
+function dueRow(p,extra=''){
+  const c=crop(p.cropId),d=days(p.plantedAt);
+  return `<button class="card row2" style="width:100%;text-align:left" data-act="openPlant" data-p="${p.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${cname(p.cropId)}</b><br><span class="sub">${esc(locLabel(p))}</span></span><span style="text-align:right"><b>Day ${d}</b><br><span class="sub">${extra}</span></span></button>`;
+}
+function dueView(){
+  const D=dueItems();
+  const sec=(t,arr,fn)=>arr.length?`<h3 style="margin:14px 0 8px">${t} <span class="sub">(${arr.length})</span></h3>${arr.map(fn).join('')}`:'';
+  let h='';
+  h+=sec('🟠 Past harvest window',D.over,p=>dueRow(p,`${days(p.plantedAt)-crop(p.cropId).harvest}d over`));
+  h+=sec('🟡 Ready to harvest',D.ready,p=>dueRow(p,'since '+nice(addDays(p.plantedAt,crop(p.cropId).harvest))));
+  h+=sec('🔵 Check germination',D.germ,p=>dueRow(p,'due day '+crop(p.cropId).germ));
+  h+=sec('🟢 Ready within a week',D.soon,p=>dueRow(p,nice(addDays(p.plantedAt,crop(p.cropId).harvest))));
+  return h||`<div class="empty-note">All caught up 🌿<br>Nothing needs attention right now.</div>`;
+}
+
+function cropsView(){
+  const list=[...db.crops].sort((a,b)=>(b.fav-a.fav)||a.name.localeCompare(b.name)||a.variety.localeCompare(b.variety));
+  return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')
+   +`<button class="btn" data-act="newCrop">＋ New crop / variety</button>`;
+}
+
+function logView(){
+  const hs=[...db.harvests].sort((a,b)=>b.date.localeCompare(a.date));
+  const totOz=hs.reduce((a,h)=>a+(h.oz||0),0);
+  const ended=db.plantings.filter(p=>p.status!=='active');
+  let h=`<div class="three"><div class="stat"><b>${activeP().length}</b><span>Growing now</span></div><div class="stat"><b>${hs.length}</b><span>Harvests</span></div><div class="stat"><b>${ozFmt(totOz)}</b><span>Total yield</span></div></div>`;
+  const by={};for(const x of hs){const k=x.cropId;by[k]=(by[k]||0)+(x.oz||0)}
+  const keys=Object.keys(by).sort((a,b)=>by[b]-by[a]);
+  if(keys.length)h+=`<h3 style="margin:16px 0 8px">Yield by crop</h3><div class="card">${keys.map(k=>`<div class="row2" style="padding:3px 0"><span class="grow1">${crop(k).emoji} ${cname(k)}</span><b>${ozFmt(by[k])}</b></div>`).join('')}</div>`;
+  h+=`<h3 style="margin:16px 0 8px">Harvest log</h3>`;
+  h+=hs.length?hs.slice(0,200).map(x=>`<div class="card row2"><span class="big">${crop(x.cropId).emoji}</span><span class="grow1"><b>${cname(x.cropId)}</b><br><span class="sub">${niceY(x.date)}${x.cleared?' · slot cleared':''}</span></span><b>${x.oz?ozFmt(x.oz):'-'}</b></div>`).join(''):`<div class="empty-note">No harvests logged yet.</div>`;
+  h+=`<h3 style="margin:16px 0 8px">Finished plantings</h3>`;
+  h+=ended.length?[...ended].sort((a,b)=>(b.endedAt||'').localeCompare(a.endedAt||'')).slice(0,100).map(p=>`<button class="card row2" style="width:100%;text-align:left" data-act="openPlant" data-p="${p.id}"><span class="big">${crop(p.cropId).emoji}</span><span class="grow1"><b>${cname(p.cropId)}</b><br><span class="sub">${nice(p.plantedAt)} → ${p.endedAt?nice(p.endedAt):'?'} · ${p.status}</span></span></button>`).join(''):`<div class="empty-note">None yet.</div>`;
+  return h;
+}
+
+function moreView(){
+  const lb=db.meta.lastBackup;
+  let h=`<h3 style="margin-bottom:8px">Gardens</h3>`;
+  h+=db.gardens.map(g=>`<div class="card row2"><span class="grow1"><b>${esc(g.name)}</b><br><span class="sub">${g.sections.length} sections</span></span><button class="btn sec small" data-act="editGarden" data-g="${g.id}">Edit</button></div>`).join('');
+  h+=`<button class="btn sec" data-act="newGarden">＋ Add garden / location</button>`;
+  h+=`<h3 style="margin:20px 0 8px">Back up your data</h3><div class="card"><div class="sub" style="margin-bottom:8px">Everything is stored on this device. ${lb?`Last backup: ${niceY(lb)}.`:'<b>No backup yet.</b>'}</div>
+  <div class="btns"><button class="btn small" data-act="exportJSON">Download backup</button><button class="btn sec small" data-act="importJSON">Restore backup</button><button class="btn sec small" data-act="copyJSON">Copy backup text</button><button class="btn sec small" data-act="exportCSV">Export CSV</button></div></div>`;
+  h+=`<h3 style="margin:20px 0 8px">Danger zone</h3><button class="btn danger" data-act="resetAll">Erase everything</button>`;
+  h+=`<p class="sub" style="text-align:center;margin-top:20px">GrowLog v1 · all data stays on this device</p>`;
+  return h;
+}
+
+/* ============ sheet ============ */
+function openSheet(state){S=state;renderSheet()}
+function closeSheet(){S=null;$('#sheet').classList.remove('open');$('#sheet').innerHTML=''}
+function renderSheet(){
+  const el=$('#sheet');
+  if(!S){el.classList.remove('open');el.innerHTML='';return}
+  const keep=el.querySelector('.sh');const st=keep?keep.scrollTop:0;
+  el.innerHTML=`<div class="bd" data-act="closeSheet"></div><div class="sh"><button class="x" data-act="closeSheet" aria-label="Close">✕</button>${SHEETS[S.type]()}</div>`;
+  el.classList.add('open');
+  const sh=el.querySelector('.sh');if(sh)sh.scrollTop=st;
+}
+function refresh(){render();if(S)renderSheet()}
+function mutate(fn){fn();save();refresh()}
+
+const EMOJIS=['🌱','🌿','🥬','🥕','🍅','🌶️','🫑','🫘','🥒','🍓','🧅','🧄','🥦','🍆','🌽','🥔','🍋','🌸','🍃','🌾'];
+
+const SHEETS={
+ /* ---- pick a crop to plant ---- */
+ plant(){
+  const q=(S.q||'').toLowerCase();
+  const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
+  const list=db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q))
+    .sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
+  const free=emptySlots(S.cid).length;
+  return `<h2>What do you want to plant?</h2><div class="sub">${esc(locLabelC(S.cid,S.i))}</div>
+   <input type="search" placeholder="Search crops…" value="${esc(S.q||'')}" data-bind="q" style="margin-top:10px">
+   <div class="pick" id="pickList">${pickList(list)}</div>
+   <button class="btn sec small" data-act="newCrop" style="margin-bottom:6px">＋ New crop / variety</button>
+   <label>Planted on</label><input type="date" value="${S.date}" max="${today()}" data-bind="pdate">
+   ${free>1?`<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${S.fill?'checked':''} data-bind="fill"> Fill all ${free} empty slots in this tray</label>`:''}
+   <div style="margin-top:12px"><button class="btn" data-act="doPlant" ${S.sel?'':'disabled style="opacity:.5"'}>Plant${S.fill&&free>1?' ×'+free:''}</button></div>`;
+ },
+ /* ---- plant details ---- */
+ detail(){
+  const p=db.plantings.find(x=>x.id===S.pid);if(!p)return'<h2>Not found</h2>';
+  const c=crop(p.cropId),d=days(p.plantedAt),st=stageOf(p),act=p.status==='active';
+  const ready=addDays(p.plantedAt,c.harvest);
+  const pct=Math.min(100,Math.max(0,d/Math.max(1,c.harvest)*100)),gm=Math.min(100,c.germ/Math.max(1,c.harvest)*100);
+  return `<div class="row2"><span style="font-size:44px">${c.emoji}</span><div class="grow1"><h2>${esc(c.name)}</h2><div class="sub">${esc(c.variety)}</div></div></div>
+   <div style="margin-top:8px"><span class="pill ${act?st:''}">${act?STAGE_LABEL[st]:p.status}</span> <span class="sub">${esc(locLabel(p))}</span></div>
+   ${act?`<div class="bar"><i style="width:${pct}%"></i><b style="left:${gm}%"></b></div>
+   <div class="row2 sub"><span>Day ${d}</span><span class="grow1" style="text-align:right">${d<c.harvest?`harvest in ${c.harvest-d}d (${nice(ready)})`:`harvestable since ${nice(ready)}`}</span></div>`:`<div class="sub" style="margin-top:6px">${nice(p.plantedAt)} → ${p.endedAt?nice(p.endedAt):'?'}</div>`}
+   <div class="sub" style="margin-top:4px">Planted ${niceY(p.plantedAt)} · ${p.germinatedAt?'germinated '+nice(p.germinatedAt):'germination not logged'}${p.lastHarvest?' · last harvest '+nice(p.lastHarvest):''}</div>
+   ${act?`<div class="btns three" style="grid-template-columns:repeat(2,1fr)">
+     <button class="btn" data-act="harvest">🧺 Harvest</button>
+     <button class="btn sec" data-act="startMove">↔️ Move</button>
+     ${p.germinatedAt?'':`<button class="btn sec" data-act="germinated">🌱 Germinated</button>`}
+     <button class="btn sec" data-act="editAge">🕒 Set date</button>
+     <button class="btn danger" data-act="removeP">🗑 Remove</button></div>`:''}
+   <label>Notes</label><textarea rows="2" data-bind="pnote" placeholder="Pests, nutrients, observations…">${esc(p.note||'')}</textarea>
+   <label>History</label>${[...p.log].reverse().map(l=>`<div class="logline">${nice(l.d)} · ${esc(l.t)}${l.n?' - '+esc(l.n):''}</div>`).join('')}`;
+ },
+ harvest(){
+  const p=db.plantings.find(x=>x.id===S.pid),c=crop(p.cropId);
+  return `<h2>Harvest ${c.emoji} ${esc(c.name)}</h2><div class="sub">Typical yield ${c.yield} oz</div>
+   <div class="two"><div><label>Weight (oz, optional)</label><input type="number" inputmode="decimal" step="0.1" min="0" value="${esc(S.oz)}" data-bind="hoz" placeholder="${c.yield}"></div><div><label>Date</label><input type="date" value="${S.date}" max="${today()}" data-bind="hdate"></div></div>
+   <label style="display:flex;gap:8px;align-items:center;color:var(--text);margin-top:14px"><input type="checkbox" style="width:auto" ${S.clear?'checked':''} data-bind="hclear"> Done with this plant - clear the slot</label>
+   <div class="sub" style="margin-top:4px">Leave unchecked for cut-and-regrow crops you'll harvest again.</div>
+   <div style="margin-top:14px"><button class="btn" data-act="doHarvest">Save harvest</button></div>`;
+ },
+ age(){
+  const p=db.plantings.find(x=>x.id===S.pid);
+  return `<h2>Planted date</h2><div class="sub">Fix the date if you logged it late. The day count updates.</div>
+   <label>Planted on</label><input type="date" value="${S.date}" max="${today()}" data-bind="adate"><div style="margin-top:14px"><button class="btn" data-act="doAge">Save</button></div>`;
+ },
+ remove(){
+  const p=db.plantings.find(x=>x.id===S.pid),c=crop(p.cropId);
+  return `<h2>Remove ${c.emoji} ${esc(c.name)}?</h2><div class="sub">It moves to History and frees the slot.</div>
+   <label>Reason (optional)</label><select data-bind="rreason">${['','Died / failed','Pests / disease','Bolted','Replaced','Other'].map(r=>`<option ${S.reason===r?'selected':''}>${r}</option>`).join('')}</select>
+   <div style="margin-top:14px"><button class="btn danger" data-act="doRemove">Remove plant</button></div>`;
+ },
+ /* ---- crop editor ---- */
+ crop(){
+  const c=S.draft;
+  return `<h2>${S.id?'Edit crop':'New crop'}</h2>
+   <div class="two"><div><label>Crop</label><input type="text" value="${esc(c.name)}" data-bind="cf" data-f="name" placeholder="Basil"></div><div><label>Variety</label><input type="text" value="${esc(c.variety)}" data-bind="cf" data-f="variety" placeholder="Genovese"></div></div>
+   <label>Icon</label><div class="emo">${EMOJIS.map(e=>`<button class="${c.emoji===e?'on':''}" data-act="pickEmoji" data-e="${e}">${e}</button>`).join('')}</div>
+   <div class="three"><div><label>Germinate (days)</label><input type="number" inputmode="numeric" value="${c.germ}" data-bind="cf" data-f="germ" data-n="1"></div><div><label>Harvest (days)</label><input type="number" inputmode="numeric" value="${c.harvest}" data-bind="cf" data-f="harvest" data-n="1"></div><div><label>Yield (oz)</label><input type="number" inputmode="decimal" step="0.1" value="${c.yield}" data-bind="cf" data-f="yield" data-n="1"></div></div>
+   <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${c.cut?'checked':''} data-bind="cfcut"> Cut-and-regrow (harvest repeatedly)</label>
+   <label>Harvest window after ready (days) - after this it shows "past harvest"</label><input type="number" inputmode="numeric" value="${c.window}" data-bind="cf" data-f="window" data-n="1">
+   <label>Notes</label><input type="text" value="${esc(c.note||'')}" data-bind="cf" data-f="note">
+   <div class="btns" style="grid-template-columns:${S.id?'1fr 2fr':'1fr'}">${S.id?`<button class="btn danger" data-act="delCrop">Delete</button>`:''}<button class="btn" data-act="saveCrop">Save</button></div>`;
+ },
+ /* ---- section editor ---- */
+ section(){
+  const g=curGarden(),s=g.sections.find(x=>x.id===S.sid);if(!s)return'<h2>Gone</h2>';
+  const lay=(sel)=>Object.entries(LAYOUTS).map(([k,v])=>`<option value="${k}" ${sel===k?'selected':''}>${v.label}</option>`).join('');
+  return `<h2>Edit ${esc(s.name)}</h2>
+   <label>Name</label><input type="text" value="${esc(s.name)}" data-bind="sname">
+   <label>Trays / containers</label>
+   ${s.containers.map(c=>`<div class="card" style="padding:8px"><div class="two"><input type="text" value="${esc(c.name)}" placeholder="(name)" data-bind="cname" data-id="${c.id}"><select data-bind="clay" data-id="${c.id}">${lay(c.layout)}</select></div><button class="btn danger small" style="margin-top:6px" data-act="delContainer" data-id="${c.id}">Remove tray</button></div>`).join('')}
+   <div class="two" style="margin:8px 0"><select data-bind="newlay">${lay(S.newlay||'pods8')}</select><button class="btn sec" data-act="addContainer">＋ Add tray</button></div>
+   <div class="btns" style="margin-top:14px"><button class="btn danger" data-act="delSection">Delete section</button><button class="btn" data-act="closeSheet">Done</button></div>`;
+ },
+ newsection(){
+  return `<h2>Add shelf / nursery</h2>
+   <label>Name</label><input type="text" value="${esc(S.name)}" placeholder="Top shelf" data-bind="nsname">
+   <label>Type</label><select data-bind="nskind"><option value="tray" ${S.kind==='tray'?'selected':''}>Tray level / shelf</option><option value="nursery" ${S.kind==='nursery'?'selected':''}>Nursery</option></select>
+   <label>First tray layout</label><select data-bind="nslay">${Object.entries(LAYOUTS).map(([k,v])=>`<option value="${k}" ${S.layout===k?'selected':''}>${v.label}</option>`).join('')}</select>
+   <div style="margin-top:14px"><button class="btn" data-act="doNewSection">Add</button></div>`;
+ },
+ garden(){
+  const g=db.gardens.find(x=>x.id===S.gid);
+  if(S.gid)return `<h2>Edit garden</h2><label>Name</label><input type="text" value="${esc(g.name)}" data-bind="gname">
+   <div class="btns" style="grid-template-columns:1fr 2fr"><button class="btn danger" data-act="delGarden">Delete</button><button class="btn" data-act="closeSheet">Done</button></div>`;
+  return `<h2>Add garden / location</h2><label>Name</label><input type="text" value="${esc(S.name)}" placeholder="Basement shelf" data-bind="ngname">
+   <label>Start from</label><select data-bind="ngtpl"><option value="empty" ${S.tpl==='empty'?'selected':''}>Empty</option><option value="trio" ${S.tpl==='trio'?'selected':''}>Rise Trio layout (3 nurseries + 3 levels)</option></select>
+   <div style="margin-top:14px"><button class="btn" data-act="doNewGarden">Add</button></div>`;
+ }
+};
+function locLabelC(cid,i){const L=locOf(cid);return L?[L.g.name,L.s.name,L.c.name,'#'+(i+1)].filter(Boolean).join(' › '):''}
+function pickList(list){
+  if(!list.length)return`<div class="empty-note">No match - add a new crop below.</div>`;
+  return list.map(c=>`<button class="crow ${S.sel===c.id?'sel':''}" style="width:100%;text-align:left" data-act="selCrop" data-id="${c.id}"><span class="em">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">${c.germ}d germinate · ${c.harvest}d harvest</span></span>${c.fav?'💛':''}</button>`).join('');
+}
+
+/* ============ actions ============ */
+const acts={
+ tab(el){ui.tab=el.dataset.k;ui.moving=ui.tab==='garden'?ui.moving:null;render();window.scrollTo(0,0)},
+ kind(el){ui.kind=el.dataset.k;render()},
+ closeSheet(){closeSheet()},
+ cancelMove(){ui.moving=null;render()},
+ slot(el){
+  const cid=el.dataset.c,i=+el.dataset.i,p=plantAt(cid,i);
+  if(ui.moving){
+    const m=db.plantings.find(x=>x.id===ui.moving);if(!m){ui.moving=null;return render()}
+    if(p&&p.id===m.id){ui.moving=null;return render()}
+    mutate(()=>{
+      if(p){const old={...m.loc};p.loc={c:old.c,i:old.i};m.loc={c:cid,i};logP(m,'swapped',`with ${crop(p.cropId).name}`);logP(p,'swapped',`with ${crop(m.cropId).name}`);toast('Swapped')}
+      else{m.loc={c:cid,i};logP(m,'moved','to '+locLabel(m));toast('Moved')}
+      ui.moving=null;
+    });
+    return;
+  }
+  if(p)return openSheet({type:'detail',pid:p.id});
+  openSheet({type:'plant',cid,i,sel:null,q:'',date:today(),fill:false});
+ },
+ selCrop(el){S.sel=el.dataset.id;renderSheet()},
+ doPlant(){
+  if(!S.sel)return;
+  const slots=S.fill?emptySlots(S.cid):[S.i];
+  mutate(()=>{
+    for(const i of slots){
+      if(plantAt(S.cid,i))continue;
+      const p={id:uid(),cropId:S.sel,loc:{c:S.cid,i},plantedAt:S.date,status:'active',note:'',log:[]};
+      logP(p,'planted');db.plantings.push(p);
+    }
+    S=null;closeSheet();
+  });
+  toast(slots.length>1?`Planted ${slots.length}`:'Planted');
+ },
+ openPlant(el){openSheet({type:'detail',pid:el.dataset.p})},
+ startMove(){ui.moving=S.pid;closeSheet();ui.tab='garden';render();toast('Pick a destination slot')},
+ germinated(){const p=db.plantings.find(x=>x.id===S.pid);mutate(()=>{p.germinatedAt=today();logP(p,'germinated')})},
+ harvest(){const p=db.plantings.find(x=>x.id===S.pid);openSheet({type:'harvest',pid:S.pid,oz:'',date:today(),clear:!crop(p.cropId).cut})},
+ doHarvest(){
+  const p=db.plantings.find(x=>x.id===S.pid),oz=num(S.oz,0);
+  mutate(()=>{
+    db.harvests.push({id:uid(),plantingId:p.id,cropId:p.cropId,date:S.date,oz,cleared:!!S.clear});
+    logP(p,'harvested',oz?ozFmt(oz):'');p.lastHarvest=S.date;
+    if(S.clear){p.status='harvested';p.endedAt=S.date}
+    S={type:'detail',pid:p.id};
+  });
+  toast('Harvest saved');
+ },
+ editAge(){const p=db.plantings.find(x=>x.id===S.pid);openSheet({type:'age',pid:S.pid,date:p.plantedAt})},
+ doAge(){const p=db.plantings.find(x=>x.id===S.pid);if(!S.date)return;mutate(()=>{logP(p,'date changed',`${p.plantedAt} → ${S.date}`);p.plantedAt=S.date;S={type:'detail',pid:p.id}})},
+ removeP(){openSheet({type:'remove',pid:S.pid,reason:''})},
+ doRemove(){const p=db.plantings.find(x=>x.id===S.pid);mutate(()=>{p.status='removed';p.endedAt=today();logP(p,'removed',S.reason||'');closeSheet()})},
+ /* crops */
+ favCrop(el){const c=db.crops.find(x=>x.id===el.dataset.id);mutate(()=>{c.fav=!c.fav})},
+ newCrop(){openSheet({type:'crop',id:null,from:S&&S.type==='plant'?S:null,draft:{name:'',variety:'',emoji:'🌱',germ:7,harvest:45,yield:3,cut:false,window:30,note:'',fav:false}})},
+ editCrop(el){const c=db.crops.find(x=>x.id===el.dataset.id);openSheet({type:'crop',id:c.id,draft:{...c}})},
+ pickEmoji(el){S.draft.emoji=el.dataset.e;renderSheet()},
+ saveCrop(){
+  const d=S.draft;if(!d.name.trim()){toast('Give it a name');return}
+  d.name=d.name.trim();d.variety=(d.variety||'').trim();
+  let back=S.from;
+  mutate(()=>{
+    if(S.id){Object.assign(db.crops.find(x=>x.id===S.id),d)}
+    else{const c={...d,id:uid()};db.crops.push(c);if(back)back.sel=c.id}
+    if(back){S=back}else closeSheet();
+  });
+ },
+ delCrop(){
+  if(db.plantings.some(p=>p.cropId===S.id)){toast('In use by plantings - can\'t delete');return}
+  if(!confirm('Delete this crop?'))return;
+  mutate(()=>{db.crops=db.crops.filter(c=>c.id!==S.id);closeSheet()});
+ },
+ /* sections / containers */
+ newSection(){openSheet({type:'newsection',name:'',kind:'tray',layout:'pods8'})},
+ doNewSection(){
+  if(!S.name.trim()){toast('Give it a name');return}
+  mutate(()=>{curGarden().sections.push(mkSection(S.name.trim(),S.kind,S.kind==='nursery'&&S.layout.startsWith('pods')?'nur4':S.layout,S.kind==='nursery'?'':'Tray 1'));closeSheet()});
+ },
+ editSection(el){openSheet({type:'section',sid:el.dataset.s,newlay:'pods8'})},
+ addContainer(){const s=curGarden().sections.find(x=>x.id===S.sid);mutate(()=>{s.containers.push(mkContainer('Tray '+(s.containers.length+1),S.newlay||'pods8'))})},
+ delContainer(el){
+  const id=el.dataset.id,n=activeP().filter(p=>p.loc.c===id).length;
+  if(n&&!confirm(`${n} plant(s) in this tray will be removed from the garden. Continue?`))return;
+  const s=curGarden().sections.find(x=>x.id===S.sid);
+  mutate(()=>{activeP().filter(p=>p.loc.c===id).forEach(p=>{p.status='removed';p.endedAt=today();logP(p,'removed','tray deleted')});s.containers=s.containers.filter(c=>c.id!==id)});
+ },
+ delSection(){
+  const s=curGarden().sections.find(x=>x.id===S.sid),ids=s.containers.map(c=>c.id);
+  const n=activeP().filter(p=>ids.includes(p.loc.c)).length;
+  if(!confirm(`Delete "${s.name}"${n?` and remove its ${n} plant(s)`:''}?`))return;
+  mutate(()=>{activeP().filter(p=>ids.includes(p.loc.c)).forEach(p=>{p.status='removed';p.endedAt=today();logP(p,'removed','section deleted')});const g=curGarden();g.sections=g.sections.filter(x=>x.id!==s.id);closeSheet()});
+ },
+ /* gardens */
+ newGarden(){openSheet({type:'garden',gid:null,name:'',tpl:'empty'})},
+ doNewGarden(){if(!S.name.trim()){toast('Give it a name');return}mutate(()=>{const g=mkGarden(S.name.trim(),S.tpl);db.gardens.push(g);db.active=g.id;closeSheet()})},
+ editGarden(el){openSheet({type:'garden',gid:el.dataset.g})},
+ delGarden(){
+  if(db.gardens.length<2){toast('Keep at least one garden');return}
+  const g=db.gardens.find(x=>x.id===S.gid),ids=g.sections.flatMap(s=>s.containers.map(c=>c.id));
+  const n=activeP().filter(p=>ids.includes(p.loc.c)).length;
+  if(!confirm(`Delete "${g.name}"${n?` and remove its ${n} plant(s)`:''}?`))return;
+  mutate(()=>{activeP().filter(p=>ids.includes(p.loc.c)).forEach(p=>{p.status='removed';p.endedAt=today();logP(p,'removed','garden deleted')});db.gardens=db.gardens.filter(x=>x.id!==g.id);if(db.active===g.id)db.active=db.gardens[0].id;closeSheet()});
+ },
+ /* backup */
+ exportJSON(){
+  const txt=JSON.stringify(db,null,1),name=`growlog-backup-${today()}.json`;
+  const blob=new Blob([txt],{type:'application/json'});
+  const file=new File([blob],name,{type:'application/json'});
+  const done=()=>{db.meta.lastBackup=today();save();render();toast('Backup saved')};
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).then(done).catch(()=>{})}
+  else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);done()}
+ },
+ copyJSON(){navigator.clipboard.writeText(JSON.stringify(db)).then(()=>{db.meta.lastBackup=today();save();render();toast('Copied to clipboard')},()=>toast('Copy not allowed here'))},
+ importJSON(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=()=>{const f=inp.files[0];if(!f)return;f.text().then(t=>{
+    try{const d=JSON.parse(t);if(!d.gardens||!d.crops||!d.plantings)throw 0;
+      if(!confirm('Replace ALL current data with this backup?'))return;
+      db=d;db.active=db.active||db.gardens[0].id;db.meta=db.meta||{};save();render();toast('Restored')}
+    catch(e){toast('That file is not a GrowLog backup')}})};
+  inp.click();
+ },
+ exportCSV(){
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const rows=[['crop','variety','garden','section','tray','slot','planted','germinated','status','ended','harvests','total_oz','notes']];
+  for(const p of db.plantings){
+    const c=crop(p.cropId),L=locOf(p.loc.c),hs=db.harvests.filter(h=>h.plantingId===p.id);
+    rows.push([c.name,c.variety,L?.g.name,L?.s.name,L?.c.name,p.loc.i+1,p.plantedAt,p.germinatedAt||'',p.status,p.endedAt||'',hs.length,hs.reduce((a,h)=>a+(h.oz||0),0),p.note||'']);
+  }
+  const blob=new Blob([rows.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`growlog-plantings-${today()}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+ },
+ resetAll(){
+  if(!confirm('Erase ALL gardens, plants and history from this device?'))return;
+  if(!confirm('Really erase everything? This cannot be undone.'))return;
+  db=seed();save();ui.tab='garden';render();toast('Reset');
+ }
+};
+
+/* ============ input bindings ============ */
+const binds={
+ garden(el){db.active=el.value;save();render()},
+ q(el){S.q=el.value;const q=S.q.toLowerCase();const used={};db.plantings.forEach(p=>used[p.cropId]=(used[p.cropId]||0)+1);
+   const list=db.crops.filter(c=>(c.name+' '+c.variety).toLowerCase().includes(q)).sort((a,b)=>(b.fav-a.fav)||((used[b.id]||0)-(used[a.id]||0))||a.name.localeCompare(b.name));
+   $('#pickList').innerHTML=pickList(list)},
+ pdate(el){S.date=el.value||today()},
+ fill(el){S.fill=el.checked;renderSheet()},
+ hoz(el){S.oz=el.value},hdate(el){S.date=el.value||today()},hclear(el){S.clear=el.checked},
+ adate(el){S.date=el.value},
+ rreason(el){S.reason=el.value},
+ pnote(el){const p=db.plantings.find(x=>x.id===S.pid);p.note=el.value;save()},
+ cf(el){const d=S.draft,f=el.dataset.f;d[f]=el.dataset.n?num(el.value,0):el.value},
+ cfcut(el){S.draft.cut=el.checked;if(el.checked&&S.draft.window<60)S.draft.window=90;renderSheet()},
+ sname(el){const s=curGarden().sections.find(x=>x.id===S.sid);if(el.value.trim()){s.name=el.value;save();render()}},
+ cname(el){const c=locOf(el.dataset.id).c;c.name=el.value;save();render()},
+ clay(el){
+  const L=locOf(el.dataset.id),n=LAYOUTS[el.value].n;
+  if(activeP().some(p=>p.loc.c===L.c.id&&p.loc.i>=n)){toast('Plants in the slots being removed - move them first');renderSheet();return}
+  L.c.layout=el.value;save();refresh();
+ },
+ newlay(el){S.newlay=el.value},
+ nsname(el){S.name=el.value},nskind(el){S.kind=el.value;S.layout=el.value==='nursery'?'nur4':'pods8';renderSheet()},nslay(el){S.layout=el.value},
+ gname(el){const g=db.gardens.find(x=>x.id===S.gid);if(el.value.trim()){g.name=el.value;save();render()}},
+ ngname(el){S.name=el.value},ngtpl(el){S.tpl=el.value}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const f=acts[el.dataset.act];if(f)f(el,e)});
+const onIn=e=>{const el=e.target.closest('[data-bind]');if(el&&binds[el.dataset.bind])binds[el.dataset.bind](el)};
+document.addEventListener('input',e=>{if(e.target.type==='checkbox'||e.target.tagName==='SELECT'||e.target.type==='date')return;onIn(e)});
+document.addEventListener('change',onIn);
+
+/* ============ go ============ */
+render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
