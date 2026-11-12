@@ -48,6 +48,7 @@ main{padding:12px 14px}
 .slot.empty:active{background:var(--card2)}
 .slot .em{font-size:22px}
 .slot .lbl{font-size:9px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.slot .lbl.v{font-size:8px;color:var(--mute);margin-top:-1px}
 .slot .dd{font-size:9px;color:var(--mute)}
 .slot.germ{border-color:var(--blue)}
 .slot.grow{border-color:var(--accent)}
@@ -391,12 +392,17 @@ function banner(){
 }
 function view(){return({garden:gardenView,due:dueView,crops:cropsView,log:logView,more:moreView})[ui.tab]()}
 
+function slotLbl(c){
+  const L=/^lettuce$/i.test(c.name);
+  if(L&&c.variety)return `<span class="lbl">${esc(c.variety)}</span>`;
+  if(c.variety)return `<span class="lbl">${esc(c.name)}</span><span class="lbl v">${esc(c.variety)}</span>`;
+  return `<span class="lbl">${esc(c.name)}</span>`}
 function slotHtml(cid,i){
   const p=plantAt(cid,i);
   const mv=ui.moving&&db.plantings.find(x=>x.id===ui.moving);
   if(!p)return `<button class="slot empty ${mv?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}" aria-label="Empty slot ${i+1}">＋</button>`;
   const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
-  return `<button class="slot ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span><span class="lbl">${esc(c.name)}</span><span class="dd">D${d}</span></button>`;
+  return `<button class="slot ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
 }
 function gardenView(){
   const g=curGarden();
