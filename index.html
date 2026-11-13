@@ -50,10 +50,9 @@ main{padding:12px 14px}
 .slot .lbl{font-size:9px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .slot .lbl.v{font-size:8px;color:var(--mute);margin-top:-1px}
 .slot .dd{font-size:9px;color:var(--mute)}
-.slot.germ{border-color:var(--blue)}
-.slot.grow{border-color:var(--accent)}
-.slot.ready{border-color:var(--gold);background:#3a3a22}
-.slot.over{border-color:var(--orange);background:#432c20}
+.slot.ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--rc) calc(var(--p)*1%),rgba(150,190,210,.22) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));pointer-events:none}
+.slot.ready{background:#3a3a22}
+.slot.over{background:#432c20}
 .slot.target{outline:2px dashed var(--accent);outline-offset:2px}
 .slot.moving{opacity:.45}
 .card{background:var(--card);border-radius:14px;padding:12px;margin-bottom:10px;border:1px solid var(--line)}
@@ -188,15 +187,38 @@ function stageOf(p){
   const c=crop(p.cropId),d=days(p.plantedAt),w=c.window??30;
   if(d<c.germ)return'germ';if(d<c.harvest)return'grow';if(d<=c.harvest+w)return'ready';return'over';
 }
+const xpDay=c=>c.xplant>0?c.xplant:Math.max(c.germ+3,Math.min(c.germ+10,Math.round(c.harvest*.6)));
+function inNursery(p){const L=locOf(p.loc.c);return !!L&&L.s.kind==='nursery'}
+/* phase: germ (nursery, not germinated) | nurs (nursery, germinated) | tray */
+function phaseOf(p){
+  if(!inNursery(p))return'tray';
+  return p.germinatedAt?'nurs':'germ';
+}
+const RING={germ:'#6ab0ff',nurs:'#4fd1c5',tray:'#4ade80',ready:'#f5c542',over:'#ff8a4c',check:'#ffb347'};
+function ringOf(p){
+  const c=crop(p.cropId),d=days(p.plantedAt),ph=phaseOf(p);
+  const clamp=x=>Math.max(0,Math.min(1,x));
+  if(ph==='germ'){const f=d/Math.max(1,c.germ);return{pct:clamp(f)*100,color:f>=1?RING.check:RING.germ,ph,tip:f>=1?'Germination due - check it':`Germination in ~${Math.max(0,c.germ-d)}d`}}
+  if(ph==='nurs'){
+    const dg=Math.max(0,Math.min(days(p.plantedAt,p.germinatedAt),xpDay(c)-1)),xp=xpDay(c),f=(d-dg)/Math.max(1,xp-dg);
+    return{pct:clamp(f)*100,color:f>=1?RING.ready:RING.nurs,ph,tip:f>=1?'Ready to transplant':`Transplant in ~${xp-d}d`}}
+  const st=stageOf(p);
+  if(st==='ready')return{pct:100,color:RING.ready,ph,tip:'Ready to harvest'};
+  if(st==='over')return{pct:100,color:RING.over,ph,tip:'Past harvest window'};
+  const t0=p.trayAt?days(p.plantedAt,p.trayAt):Math.min(days(p.plantedAt,p.germinatedAt||p.plantedAt),Math.round(c.harvest*.3));
+  const f=(d-t0)/Math.max(1,c.harvest-t0);
+  return{pct:clamp(f)*100,color:RING.tray,ph,tip:`Harvest in ~${Math.max(0,c.harvest-d)}d`};
+}
 const STAGE_LABEL={germ:'Germinating',grow:'Growing',ready:'Ready to harvest',over:'Past harvest window'};
 const logP=(p,t,n='')=>{p.log.push({d:today(),t,n})};
 const emptySlots=cid=>{const L=locOf(cid);if(!L)return[];const out=[];for(let i=0;i<dims(L.c).n;i++)if(!plantAt(cid,i))out.push(i);return out};
 function dueItems(){
-  const out={ready:[],over:[],germ:[],soon:[]};
+  const out={ready:[],over:[],germ:[],xp:[],soon:[]};
   for(const p of activeP()){
     const c=crop(p.cropId),d=days(p.plantedAt),st=stageOf(p);
     if(st==='over')out.over.push(p);else if(st==='ready')out.ready.push(p);
-    else if(!p.germinatedAt&&d>=c.germ&&d>0)out.germ.push(p);
+    else if(inNursery(p)&&!p.germinatedAt&&d>=c.germ&&d>0)out.germ.push(p);
+    else if(inNursery(p)&&p.germinatedAt&&d>=xpDay(c))out.xp.push(p);
     if(st!=='over'&&st!=='ready'&&c.harvest-d<=7&&c.harvest-d>0)out.soon.push(p);
   }
   return out;
@@ -402,7 +424,8 @@ function slotHtml(cid,i){
   const mv=ui.moving&&db.plantings.find(x=>x.id===ui.moving);
   if(!p)return `<button class="slot empty ${mv?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}" aria-label="Empty slot ${i+1}">＋</button>`;
   const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
-  return `<button class="slot ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
+  const R=ringOf(p);
+  return `<button class="slot ring ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color}" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
 }
 function gardenView(){
   const g=curGarden();
@@ -436,6 +459,7 @@ function dueView(){
   h+=sec('🟠 Past harvest window',D.over,p=>dueRow(p,`${days(p.plantedAt)-crop(p.cropId).harvest}d over`));
   h+=sec('🟡 Ready to harvest',D.ready,p=>dueRow(p,'since '+nice(addDays(p.plantedAt,crop(p.cropId).harvest))));
   h+=sec('🔵 Check germination',D.germ,p=>dueRow(p,'due day '+crop(p.cropId).germ));
+  h+=sec('🪴 Ready to transplant',D.xp,p=>dueRow(p,'target day '+xpDay(crop(p.cropId))));
   h+=sec('🟢 Ready within a week',D.soon,p=>dueRow(p,nice(addDays(p.plantedAt,crop(p.cropId).harvest))));
   return h||`<div class="empty-note">All caught up 🌿<br>Nothing needs attention right now.</div>`;
 }
@@ -536,6 +560,7 @@ const SHEETS={
    <div style="margin-top:8px"><span class="pill ${act?st:''}">${act?STAGE_LABEL[st]:p.status}</span> <span class="sub">${esc(locLabel(p))}</span></div>
    ${act?`<div class="bar"><i style="width:${pct}%"></i><b style="left:${gm}%"></b></div>
    <div class="row2 sub"><span>Day ${d}</span><span class="grow1" style="text-align:right">${d<c.harvest?`harvest in ${c.harvest-d}d (${nice(ready)})`:`harvestable since ${nice(ready)}`}</span></div>`:`<div class="sub" style="margin-top:6px">${nice(p.plantedAt)} → ${p.endedAt?nice(p.endedAt):'?'}</div>`}
+   ${act?(()=>{const R=ringOf(p),xp=xpDay(c),nur=inNursery(p);return `<div class="card" style="margin-top:8px;padding:8px 10px;font-size:13px"><div class="row2"><span class="grow1">🌱 Germination</span><span>${p.germinatedAt?'✓ '+nice(p.germinatedAt):'~'+nice(addDays(p.plantedAt,c.germ))+' (day '+c.germ+')'}</span></div>${nur||p.trayAt?`<div class="row2"><span class="grow1">🪴 Transplant</span><span>${p.trayAt?'✓ '+nice(p.trayAt):'~'+nice(addDays(p.plantedAt,xp))+' (day '+xp+')'}</span></div>`:''}<div class="row2"><span class="grow1">🧺 First harvest</span><span>~${nice(ready)} (day ${c.harvest})</span></div><div class="sub" style="margin-top:4px">Ring: ${R.tip}</div></div>`})():''}
    <div class="sub" style="margin-top:4px">Planted ${niceY(p.plantedAt)} · ${p.germinatedAt?'germinated '+nice(p.germinatedAt):'germination not logged'}${p.lastHarvest?' · last harvest '+nice(p.lastHarvest):''}</div>
    ${act?`<div class="btns three" style="grid-template-columns:repeat(2,1fr)">
      <button class="btn" data-act="harvest">🧺 Harvest</button>
@@ -572,6 +597,7 @@ const SHEETS={
    <div class="two"><div><label>Crop</label><input type="text" value="${esc(c.name)}" data-bind="cf" data-f="name" placeholder="Basil"></div><div><label>Variety</label><input type="text" value="${esc(c.variety)}" data-bind="cf" data-f="variety" placeholder="Genovese"></div></div>
    <label>Icon</label><div class="emo">${EMOJIS.map(e=>`<button class="${c.emoji===e?'on':''}" data-act="pickEmoji" data-e="${e}">${e}</button>`).join('')}</div>
    <div class="three"><div><label>Germinate (days)</label><input type="number" inputmode="numeric" value="${c.germ}" data-bind="cf" data-f="germ" data-n="1"></div><div><label>Harvest (days)</label><input type="number" inputmode="numeric" value="${c.harvest}" data-bind="cf" data-f="harvest" data-n="1"></div><div><label>Yield (oz)</label><input type="number" inputmode="decimal" step="0.1" value="${c.yield}" data-bind="cf" data-f="yield" data-n="1"></div></div>
+   <label>Transplant to tray (days after planting) - leave blank for auto</label><input type="number" inputmode="numeric" value="${c.xplant||''}" placeholder="auto (~${xpDay({...c,xplant:0})})" data-bind="cf" data-f="xplant" data-n="1">
    <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${c.cut?'checked':''} data-bind="cfcut"> Cut-and-regrow (harvest repeatedly)</label>
    <label>Harvest window after ready (days) - after this it shows "past harvest"</label><input type="number" inputmode="numeric" value="${c.window}" data-bind="cf" data-f="window" data-n="1">
    <label>Notes</label><input type="text" value="${esc(c.note||'')}" data-bind="cf" data-f="note">
@@ -638,8 +664,8 @@ const acts={
     const m=db.plantings.find(x=>x.id===ui.moving);if(!m){ui.moving=null;return render()}
     if(p&&p.id===m.id){ui.moving=null;return render()}
     mutate(()=>{
-      if(p){const old={...m.loc};p.loc={c:old.c,i:old.i};m.loc={c:cid,i};logP(m,'swapped',`with ${crop(p.cropId).name}`);logP(p,'swapped',`with ${crop(m.cropId).name}`);toast('Swapped')}
-      else{m.loc={c:cid,i};logP(m,'moved','to '+locLabel(m));toast('Moved')}
+      if(p){const old={...m.loc};const wm=inNursery(m),wp=inNursery(p);p.loc={c:old.c,i:old.i};m.loc={c:cid,i};if(wm&&!inNursery(m)){m.trayAt=today();if(!m.germinatedAt)m.germinatedAt=today()}if(wp&&!inNursery(p)){p.trayAt=today();if(!p.germinatedAt)p.germinatedAt=today()}logP(m,'swapped',`with ${crop(p.cropId).name}`);logP(p,'swapped',`with ${crop(m.cropId).name}`);toast('Swapped')}
+      else{const was=inNursery(m);m.loc={c:cid,i};if(was&&!inNursery(m)){m.trayAt=today();if(!m.germinatedAt)m.germinatedAt=today()}logP(m,'moved','to '+locLabel(m));toast('Moved')}
       ui.moving=null;
     });
     return;
