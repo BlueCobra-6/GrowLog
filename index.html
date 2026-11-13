@@ -50,7 +50,8 @@ main{padding:12px 14px}
 .slot .lbl{font-size:9px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .slot .lbl.v{font-size:8px;color:var(--mute);margin-top:-1px}
 .slot .dd{font-size:9px;color:var(--mute)}
-.slot.ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--rc) calc(var(--p)*1%),rgba(150,190,210,.22) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));pointer-events:none}
+.slot.gz::after{content:'🌱';position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--bg);border:1.5px solid var(--rc);font-size:10px;line-height:15px;text-align:center}
+.slot.ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;background:conic-gradient(var(--rc) calc(var(--p)*1%),var(--tc) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));pointer-events:none}
 .slot.ready{background:#3a3a22}
 .slot.over{background:#432c20}
 .slot.target{outline:2px dashed var(--accent);outline-offset:2px}
@@ -425,7 +426,7 @@ function slotHtml(cid,i){
   if(!p)return `<button class="slot empty ${mv?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}" aria-label="Empty slot ${i+1}">＋</button>`;
   const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
   const R=ringOf(p);
-  return `<button class="slot ring ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color}" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
+  return `<button class="slot ring ${R.ph==='nurs'?'gz':''} ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color};--tc:${R.color}4d" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
 }
 function gardenView(){
   const g=curGarden();
