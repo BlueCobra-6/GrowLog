@@ -48,7 +48,6 @@ main{padding:12px 14px}
 .grid.sm .slot .em{font-size:18px}.grid.sm .slot .lbl,.grid.sm .slot .dd{font-size:8px;max-width:44px}
 .grid.sm .slot .lbl.v{display:none}
 .grid.xs .slot .em{font-size:16px}.grid.xs .slot .lbl,.grid.xs .slot .dd{display:none}
-.chip.water+.gear{margin-left:0}
 .chip.water{margin-left:auto;padding:4px 10px;font-size:13px}
 .chip.water.soon{border-color:var(--gold);color:var(--gold)}
 .chip.water.late{border-color:var(--orange);color:var(--orange);background:#432c20}
@@ -239,25 +238,28 @@ function dueItems(){
   return out;
 }
 
-function secContIds(sec){return sec.containers.map(c=>c.id)}
-function secPlants(sec){const ids=secContIds(sec);return activeP().filter(p=>ids.includes(p.loc.c))}
-function waterInfo(sec){
-  if(sec.kind!=='nursery')return null;
-  const pl=secPlants(sec);if(!pl.length)return null;
-  const auto=!sec.waterAt,base=sec.waterAt||pl.map(p=>p.plantedAt).sort()[0],every=sec.waterEvery>0?sec.waterEvery:7;
+const contPlants=c=>activeP().filter(p=>p.loc.c===c.id);
+function waterInfo(c,sec){
+  if(!sec||sec.kind!=='nursery')return null;
+  const pl=contPlants(c);if(!pl.length)return null;
+  const auto=!c.waterAt,base=c.waterAt||pl.map(p=>p.plantedAt).sort()[0],every=c.waterEvery>0?c.waterEvery:7;
   return{base,auto,every,left:every-days(base),due:addDays(base,every)};
 }
 const waterLbl=l=>l>1?`in ${l}d`:l===1?'tomorrow':l===0?'today':`${-l}d late`;
+const contName=(c,sec)=>c.name||(sec.containers.length>1?`${sec.name} #${sec.containers.indexOf(c)+1}`:sec.name);
+function findCont(cid){for(const g of db.gardens)for(const sec of g.sections){const c=sec.containers.find(x=>x.id===cid);if(c)return{g,sec,c}}return null}
 function waterDue(){
   const out=[];
-  for(const g of db.gardens)for(const sec of g.sections){const w=waterInfo(sec);if(w&&w.left<=1)out.push({g,sec,w})}
+  for(const g of db.gardens)for(const sec of g.sections)for(const c of sec.containers){const w=waterInfo(c,sec);if(w&&w.left<=1)out.push({g,sec,c,w})}
   return out.sort((a,b)=>a.w.left-b.w.left);
 }
 /* a nursery that just went from empty to in-use starts with fresh water */
 function noteFill(cid,date){
-  const L=locOf(cid);if(!L||L.s.kind!=='nursery')return;
-  if(!secPlants(L.s).length)L.s.waterAt=date||today();
+  const F=findCont(cid);if(!F||F.sec.kind!=='nursery')return;
+  if(!contPlants(F.c).length)F.c.waterAt=date||today();
 }
+/* earlier versions tracked water per shelf: copy it down to each nursery */
+for(const g of db.gardens)for(const sec of g.sections){if(sec.waterAt||sec.waterEvery){for(const c of sec.containers){if(!c.waterAt&&sec.waterAt)c.waterAt=sec.waterAt;if(!c.waterEvery&&sec.waterEvery)c.waterEvery=sec.waterEvery}delete sec.waterAt;delete sec.waterEvery}}
 const STARTER_CSV=`name,variety,germ_days,harvest_days,yield_oz,cut,window_days,emoji,note
 Kale,Scarlet,7,50,6.3,yes,60,🥬,Rise product page
 Kale,Starbor,5,42,6.3,yes,60,🥬,Rise product page
@@ -470,10 +472,10 @@ function gardenView(){
   for(const s of secs){
     const tot=s.containers.reduce((a,c)=>a+dims(c).n,0),used=s.containers.reduce((a,c)=>a+(dims(c).n-emptySlots(c.id).length),0);
     const up=sibIdx(g,s,-1)<0,dn=sibIdx(g,s,1)<0;
-    h+=`<div class="section" data-sec="${s.id}"><div class="sechead"><h3>${esc(s.name)}</h3><span class="sub">${used}/${tot}</span>${ui.reorder?`<span class="grow1"></span><button class="mv" data-act="moveSecD" data-s="${s.id}" data-d="-1" ${up?'disabled':''} aria-label="Move up">▲</button><button class="mv" data-act="moveSecD" data-s="${s.id}" data-d="1" ${dn?'disabled':''} aria-label="Move down">▼</button>`:`${(()=>{const w=waterInfo(s);return w?`<button class="chip water ${w.left<0?'late':w.left<=1?'soon':''}" data-act="waterSheet" data-s="${s.id}">💧 ${waterLbl(w.left)}</button>`:''})()}<button class="gear" data-act="editSection" data-s="${s.id}" aria-label="Edit">✏️</button>`}</div><div class="conts">`;
+    h+=`<div class="section" data-sec="${s.id}"><div class="sechead"><h3>${esc(s.name)}</h3><span class="sub">${used}/${tot}</span>${ui.reorder?`<span class="grow1"></span><button class="mv" data-act="moveSecD" data-s="${s.id}" data-d="-1" ${up?'disabled':''} aria-label="Move up">▲</button><button class="mv" data-act="moveSecD" data-s="${s.id}" data-d="1" ${dn?'disabled':''} aria-label="Move down">▼</button>`:`<button class="gear" data-act="editSection" data-s="${s.id}" aria-label="Edit">✏️</button>`}</div><div class="conts">`;
     s.containers.forEach((c,ci)=>{
       const D=dims(c);
-      const head=ui.reorder?`<div class="cn row2"><button class="mv sm" data-act="moveContD" data-s="${s.id}" data-id="${c.id}" data-d="-1" ${ci===0?'disabled':''} aria-label="Move tray left">◀</button><span class="grow1" style="text-align:center">${esc(c.name||'Tray')}</span><button class="mv sm" data-act="moveContD" data-s="${s.id}" data-id="${c.id}" data-d="1" ${ci===s.containers.length-1?'disabled':''} aria-label="Move tray right">▶</button></div>`:(c.name?`<div class="cn">${esc(c.name)} · ${D.label}</div>`:'');
+      const head=ui.reorder?`<div class="cn row2"><button class="mv sm" data-act="moveContD" data-s="${s.id}" data-id="${c.id}" data-d="-1" ${ci===0?'disabled':''} aria-label="Move tray left">◀</button><span class="grow1" style="text-align:center">${esc(c.name||'Tray')}</span><button class="mv sm" data-act="moveContD" data-s="${s.id}" data-id="${c.id}" data-d="1" ${ci===s.containers.length-1?'disabled':''} aria-label="Move tray right">▶</button></div>`:(s.kind==='nursery'?(()=>{const w=waterInfo(c,s);return `<div class="cn row2"><span class="grow1">${c.name?esc(c.name)+' · ':''}${D.label}</span>${w?`<button class="chip water ${w.left<0?'late':w.left<=1?'soon':''}" data-act="waterSheet" data-id="${c.id}">💧 ${waterLbl(w.left)}</button>`:''}</div>`})():(c.name?`<div class="cn">${esc(c.name)} · ${D.label}</div>`:''));
       h+=`<div class="cont">${head}<div class="grid ${slotSize(D.cols)<44?'xs':slotSize(D.cols)<56?'sm':''}" style="--cols:${D.cols};--sz:${slotSize(D.cols)}px">${Array.from({length:D.n},(_,i)=>slotHtml(c.id,i)).join('')}</div></div>`;
     });
     h+=`</div></div>`;
@@ -490,7 +492,7 @@ function dueView(){
   const D=dueItems(),WD=waterDue();
   const sec=(t,arr,fn)=>arr.length?`<h3 style="margin:14px 0 8px">${t} <span class="sub">(${arr.length})</span></h3>${arr.map(fn).join('')}`:'';
   let h='';
-  h+=sec('💧 Water changes',WD,x=>`<button class="card row2" style="width:100%;text-align:left" data-act="waterSheet" data-s="${x.sec.id}"><span class="big">💧</span><span class="grow1"><b>${esc(x.sec.name)}</b>${db.gardens.length>1?`<br><span class="sub">${esc(x.g.name)}</span>`:''}</span><span style="text-align:right"><b>${waterLbl(x.w.left)}</b><br><span class="sub">${nice(x.w.due)}</span></span></button>`);
+  h+=sec('💧 Water changes',WD,x=>`<button class="card row2" style="width:100%;text-align:left" data-act="waterSheet" data-id="${x.c.id}"><span class="big">💧</span><span class="grow1"><b>${esc(contName(x.c,x.sec))}</b>${db.gardens.length>1?`<br><span class="sub">${esc(x.g.name)}</span>`:''}</span><span style="text-align:right"><b>${waterLbl(x.w.left)}</b><br><span class="sub">${nice(x.w.due)}</span></span></button>`);
   h+=sec('🟠 Past harvest window',D.over,p=>dueRow(p,`${days(p.plantedAt)-crop(p.cropId).harvest}d over`));
   h+=sec('🟡 Ready to harvest',D.ready,p=>dueRow(p,'since '+nice(addDays(p.plantedAt,crop(p.cropId).harvest))));
   h+=sec('🔵 Check germination',D.germ,p=>dueRow(p,'due day '+crop(p.cropId).germ));
@@ -662,10 +664,9 @@ const SHEETS={
    <div class="btns" style="margin-top:14px"><button class="btn danger" data-act="delSection">Delete section</button><button class="btn" data-act="closeSheet">Done</button></div>`;
  },
  water(){
-  let sec=null;for(const g of db.gardens){const x=g.sections.find(z=>z.id===S.sid);if(x)sec=x}
-  if(!sec)return'<h2>Gone</h2>';
-  const w=waterInfo(sec),every=sec.waterEvery>0?sec.waterEvery:7;
-  return `<h2>💧 ${esc(sec.name)} - water change</h2>
+  const F=findCont(S.cid);if(!F)return'<h2>Gone</h2>';
+  const w=waterInfo(F.c,F.sec),every=F.c.waterEvery>0?F.c.waterEvery:7;
+  return `<h2>💧 ${esc(contName(F.c,F.sec))} - water change</h2>
    ${w?`<div class="card" style="font-size:14px"><div class="row2"><span class="grow1">Last changed</span><span>${nice(w.base)}${w.auto?' <span class="sub">(first planted)</span>':''}</span></div><div class="row2"><span class="grow1">Next change</span><span><b>${nice(w.due)}</b> · ${waterLbl(w.left)}</span></div></div>`:'<div class="sub">Nothing planted here, so no water change is due. The timer starts when you plant something.</div>'}
    <div class="btns" style="margin-top:12px"><button class="btn" data-act="waterDone" data-o="0">✓ Changed today</button><button class="btn sec" data-act="waterDone" data-o="1">Changed yesterday</button></div>
    <label>Change every (days)</label><input type="number" inputmode="numeric" min="1" max="60" value="${every}" data-bind="wevery">
@@ -713,7 +714,7 @@ const acts={
     if(p&&p.id===m.id){ui.moving=null;return render()}
     mutate(()=>{
       if(p){const old={...m.loc};const wm=inNursery(m),wp=inNursery(p);p.loc={c:old.c,i:old.i};m.loc={c:cid,i};if(wm&&!inNursery(m)){m.trayAt=today();if(!m.germinatedAt)m.germinatedAt=today()}if(wp&&!inNursery(p)){p.trayAt=today();if(!p.germinatedAt)p.germinatedAt=today()}logP(m,'swapped',`with ${crop(p.cropId).name}`);logP(p,'swapped',`with ${crop(m.cropId).name}`);toast('Swapped')}
-      else{const was=inNursery(m);if(locOf(cid)&&locOf(m.loc.c)&&locOf(cid).s.id!==locOf(m.loc.c).s.id)noteFill(cid);m.loc={c:cid,i};if(was&&!inNursery(m)){m.trayAt=today();if(!m.germinatedAt)m.germinatedAt=today()}logP(m,'moved','to '+locLabel(m));toast('Moved')}
+      else{const was=inNursery(m);if(cid!==m.loc.c)noteFill(cid);m.loc={c:cid,i};if(was&&!inNursery(m)){m.trayAt=today();if(!m.germinatedAt)m.germinatedAt=today()}logP(m,'moved','to '+locLabel(m));toast('Moved')}
       ui.moving=null;
     });
     return;
@@ -738,8 +739,8 @@ const acts={
  },
  openPlant(el){openSheet({type:'detail',pid:el.dataset.p})},
  startMove(){ui.moving=S.pid;closeSheet();ui.tab='garden';render();toast('Pick a destination slot')},
- waterSheet(el){openSheet({type:'water',sid:el.dataset.s})},
- waterDone(el){let sec=null;for(const g of db.gardens){const x=g.sections.find(z=>z.id===S.sid);if(x)sec=x}if(!sec)return;mutate(()=>{sec.waterAt=addDays(today(),-(+el.dataset.o||0))});toast('Water change logged');closeSheet()},
+ waterSheet(el){openSheet({type:'water',cid:el.dataset.id})},
+ waterDone(el){const F=findCont(S.cid);if(!F)return;mutate(()=>{F.c.waterAt=addDays(today(),-(+el.dataset.o||0))});toast('Water change logged');closeSheet()},
  ungerminate(){const p=db.plantings.find(x=>x.id===S.pid);mutate(()=>{delete p.germinatedAt;const i=p.log.map(e=>e.t).lastIndexOf('germinated');if(i>=0)p.log.splice(i,1)})},
  germinated(){const p=db.plantings.find(x=>x.id===S.pid);mutate(()=>{p.germinatedAt=today();logP(p,'germinated')})},
  harvest(){const p=db.plantings.find(x=>x.id===S.pid);openSheet({type:'harvest',pid:S.pid,oz:'',date:today(),clear:!crop(p.cropId).cut})},
@@ -920,7 +921,7 @@ const binds={
  },
  crows(el){const L=locOf(el.dataset.id),d=dims(L.c);setLayout(L,gridId(el.value,d.cols),true)},
  ccols(el){const L=locOf(el.dataset.id),d=dims(L.c);setLayout(L,gridId(d.rows,el.value),true)},
- wevery(el){let sec=null;for(const g of db.gardens){const x=g.sections.find(z=>z.id===S.sid);if(x)sec=x}if(sec&&+el.value>0){sec.waterEvery=Math.min(60,Math.round(+el.value));save();render()}},
+ wevery(el){const F=findCont(S.cid);if(F&&+el.value>0){F.c.waterEvery=Math.min(60,Math.round(+el.value));save();render()}},
  nr(el){S.nr=clampN(el.value)},nc(el){S.nc=clampN(el.value)},
  newlay(el){S.newlay=el.value;renderSheet()},
  nsname(el){S.name=el.value},nskind(el){S.kind=el.value;S.layout=el.value==='nursery'?'nur4':'pods8';renderSheet()},nslay(el){S.layout=el.value;renderSheet()},
