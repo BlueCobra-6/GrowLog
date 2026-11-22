@@ -358,7 +358,16 @@ Microgreens,Broccoli,3,14,0.9,no,7,🌱,Rise product page
 Microgreens,Kohlrabi Purple,3,14,0.9,no,7,🌱,Rise product page
 Microgreens,Radish Red Rambo,3,14,0.9,no,7,🌱,Rise product page
 Microgreens,Basil Lemon,5,18,0.9,no,7,🌱,Rise product page
-`;
+Watercress,,5,35,2.0,yes,60,🥬,Estimate - Rise guide says 14-20 days from transplant; germination assumed
+Leek,Carentan,10,100,4.0,no,30,🌱,Seed packets: ~100 days to maturity (90-110); germination assumed
+Collards,Morris Heading,5,60,7.1,yes,60,🥬,Estimate - packet says 75 days to maturity; first leaf harvest earlier. Yield from Rise Top Bunch
+Collards,Georgia Southern,5,60,7.1,yes,60,🥬,Estimate - packet says 70-75 days to maturity; first leaf harvest earlier. Yield from Rise Top Bunch
+Lettuce,Ashley,5,35,3.5,yes,45,🥬,Estimate - packet says ~50 days to full maturity; harvest like other Rise lettuces
+Oregano,Italian,10,50,1.2,yes,90,🌿,Estimate - germination 7-14 days per seed sellers; harvest timed like Rise Greek oregano
+Sage,Broad Leaved,14,49,0.9,yes,90,🌿,Estimate - same timing as Rise Classic sage
+Basil,Red Rubin,7,47,1.8,yes,90,🌿,Germination 5-10 days per seed sellers; harvest timed like Rise Genovese basil
+Lemon Balm,,10,60,1.2,yes,90,🌿,Seed sellers: germinates 7-14 days; ~60 days to first harvest
+Lavender,Munstead,18,100,0.7,yes,90,🌸,Seed sellers: germinates 14-21 days; 100-110 days to maturity. Yield from Rise Vicenza lavender`;
 
 /* ============ crop import ============ */
 const ckey=(n,v)=>(String(n||'')+'|'+String(v||'')).toLowerCase().replace(/[^a-z0-9|]/g,'');
@@ -560,10 +569,10 @@ const CATS=['Herb','Lettuce','Leafy green','Fruiting','Root & other veg','Flower
 function catOf(c){if(c.cat)return c.cat;const n=(c.name||'').toLowerCase();
  if(/microgreen/.test(n))return'Microgreen';
  if(/^(lettuce|endive)/.test(n))return'Lettuce';
- if(/basil|cilantro|coriander|parsley|dill|chive|spring onion|mint|catnip|thyme|oregano|rosemary|sage|tarragon|sorrel|borage|chamomile|lavender/.test(n))return(/borage|chamomile|lavender/.test(n)?'Herb':'Herb');
+ if(/basil|cilantro|coriander|parsley|dill|chive|spring onion|mint|balm|catnip|thyme|oregano|rosemary|sage|tarragon|sorrel|borage|chamomile|lavender/.test(n))return(/borage|chamomile|lavender/.test(n)?'Herb':'Herb');
  if(/sunflower|marigold|baby.s breath|poppy|flower/.test(n))return'Flower';
  if(/tomato|pepper|eggplant|strawberry|cucumber|pumpkin|pea\b|bean/.test(n))return'Fruiting';
- if(/radish|beet|turnip|cauliflower|celery/.test(n))return'Root & other veg';
+ if(/radish|beet|turnip|cauliflower|celery|leek/.test(n))return'Root & other veg';
  return'Leafy green'}
 function cropList(st){
  st=st||S;const q=(st.q||'').toLowerCase(),f=st.f||'recent',cat=st.cat||'';
@@ -642,7 +651,7 @@ const SHEETS={
  import(){
   return `<h2>Import crops</h2>
    <div class="sub">Adds crop types (with germinate/harvest days and yield) to your library. Paste from a spreadsheet or load a file.</div>
-   <div class="btns" style="grid-template-columns:1fr"><button class="btn" data-act="loadStarter">🌿 Load full Rise catalog (97 crops)</button></div>
+   <div class="btns" style="grid-template-columns:1fr"><button class="btn" data-act="loadStarter">🌿 Load Rise catalog + extras (107 crops)</button></div>
    <label>Or paste rows (CSV, tab-separated, or JSON)</label>
    <textarea rows="4" data-bind="imptext" placeholder="name, variety, germ_days, harvest_days, yield_oz, cut, window_days, emoji, note">${esc(S.text)}</textarea>
    <div class="btns"><button class="btn sec small" data-act="impFile">Choose file…</button><button class="btn sec small" data-act="exportCrops">Export my crops</button></div>
@@ -780,7 +789,7 @@ const acts={
  },
  /* crop import */
  importCrops(){openSheet({type:'import',text:'',update:false})},
- loadStarter(){S.text=STARTER_CSV;S.update=true;renderSheet()},
+ loadStarter(){S.text=STARTER_CSV;S.update=false;renderSheet()},
  impFile(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.csv,.tsv,.txt,.json,text/csv,text/plain,application/json';
   inp.onchange=()=>{const f=inp.files[0];if(f)f.text().then(t=>{if(S&&S.type==='import'){S.text=t;renderSheet()}})};
