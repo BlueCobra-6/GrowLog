@@ -48,6 +48,12 @@ main{padding:12px 14px}
 .grid.sm .slot .em{font-size:18px}.grid.sm .slot .lbl,.grid.sm .slot .dd{font-size:8px;max-width:44px}
 .grid.sm .slot .lbl.v{display:none}
 .grid.xs .slot .em{font-size:16px}.grid.xs .slot .lbl,.grid.xs .slot .dd{display:none}
+.slot .sg{position:absolute;top:-3px;left:-3px;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:700;line-height:18px;text-align:center;color:#10201f;border:1.5px solid var(--bg)}
+.slot .sg.g0{background:#9be7b0}.slot .sg.g1{background:#f5d76e}.slot .sg.g2{background:#ffa45c}
+.slot .hg{position:absolute;bottom:-3px;left:-3px;min-width:16px;height:16px;border-radius:8px;font-size:10px;font-weight:700;line-height:16px;text-align:center;color:#10201f;border:1.5px solid var(--bg);padding:0 2px}
+.slot .hg.h0{background:#a9d6ff}.slot .hg.h1{background:#7fb4f0}.slot .hg.h2{background:#5b8de0;color:#fff}
+.slot.clash{outline:3px dashed #ff5d5d;outline-offset:2px}
+.slot.clash .sg{background:#ff5d5d;color:#fff}
 .chip.water{margin-left:auto;padding:4px 10px;font-size:13px}
 .chip.water.soon{border-color:var(--gold);color:var(--gold)}
 .chip.water.late{border-color:var(--orange);color:var(--orange);background:#432c20}
@@ -464,7 +470,7 @@ function impPreview(){
 }
 
 /* ============ UI state ============ */
-const ui={tab:'garden',kind:'all',moving:null,reorder:false,cq:{q:'',f:'all',cat:''}};
+const ui={tab:'garden',kind:'all',moving:null,reorder:false,light:false,height:false,cq:{q:'',f:'all',cat:''}};
 let S=null; // current sheet state
 const TABS=[['garden','🌱','Garden'],['due','⏰','Due'],['crops','🥬','Crops'],['log','📒','Log'],['more','⚙️','More']];
 
@@ -486,6 +492,8 @@ function header(){
   return `<div class="top"><div class="row"><h1>${titles[ui.tab]}</h1></div></div>`;
 }
 function banner(){
+  if(ui.height&&!ui.light&&ui.tab==='garden'&&!ui.reorder)return `<div class="banner" style="background:#2a3a4a"><span>📏 Height · <b>S</b> short · <b>M</b> medium · <b>T</b> tall</span><button data-act="heightToggle">Done</button></div>`
+  if(ui.light&&ui.tab==='garden'&&!ui.reorder){const n=shadeProblems();return `<div class="banner" style="background:#3a3a22"><span>☀️ Shade groups · <b>${n?n+' spacing problem'+(n>1?'s':''):'no problems'}</b></span><button data-act="lightToggle">Done</button></div>`}
   if(ui.reorder&&ui.tab==='garden')return `<div class="banner">Reorder mode - use the arrows<button data-act="reorderToggle">Done</button></div>`;
   if(!ui.moving)return'';
   const p=db.plantings.find(x=>x.id===ui.moving);if(!p)return'';
@@ -494,6 +502,45 @@ function banner(){
 }
 function view(){return({garden:gardenView,due:dueView,crops:cropsView,log:logView,more:moreView})[ui.tab]()}
 
+/* Rise shade groups: 0 = light resilient, 1 = only next to group 0, 2 = needs an empty neighbour */
+const SHADE_RULES=[
+ [/microgreen|mexican mint/,0],
+ [/peppermint|mojito/,1],
+ [/tomato|eggplant|pepper|cauliflower|collard|sunflower|cucumber|pumpkin/,2],
+ [/\bbasil|\bbeans?\b|\bpeas?\b|kale|cabbage|catnip|celery|shiso|watercress|lemon balm|durango|marigold|strawberry|chard|malabar|eucalyptus|baby.s breath|raab|borage|poppy|\bmint/,1],
+ [/lettuce|radish|beet|arugula|rocket|tatsoi|mustard|choi|parsley|cilantro|coriander|dandelion|dill|endive|fennel|amaranth|marjoram|rosemary|sage|sorrel|stevia|tarragon|thyme|turnip|oregano|radicchio|chamomile|chinese broccoli|chives|spring onion|fenugreek|lavender|lemongrass|spinach|leek/,0]
+];
+function shadeOf(c){
+  if(c.shade===0||c.shade===1||c.shade===2)return c.shade;
+  const n=((c.name||'')+' '+(c.variety||'')).toLowerCase();
+  for(const [re,g] of SHADE_RULES)if(re.test(n))return g;
+  return null;
+}
+const SHADE_WORD=['light-resilient','needs group-0 neighbours','needs an empty spot beside it'];
+/* only plants in trays are checked; neighbours are the slots directly up/down/left/right */
+function shadeClash(p){
+  const L=locOf(p.loc.c);if(!L||L.s.kind==='nursery')return null;
+  const g=shadeOf(crop(p.cropId));if(g==null||g===0)return null;
+  const D=dims(L.c),i=p.loc.i,col=i%D.cols,nb=[];
+  if(col>0)nb.push(i-1);if(col<D.cols-1&&i+1<D.n)nb.push(i+1);if(i-D.cols>=0)nb.push(i-D.cols);if(i+D.cols<D.n)nb.push(i+D.cols);
+  const bad=nb.map(j=>plantAt(p.loc.c,j)).filter(Boolean).filter(q=>{const qg=shadeOf(crop(q.cropId));return g===2||(qg!=null&&qg>=1)});
+  return bad.length?{g,with:bad.map(q=>crop(q.cropId))}:null;
+}
+function shadeProblems(){const g=curGarden();let n=0;for(const p of activeP()){const L=locOf(p.loc.c);if(L&&L.g.id===g.id&&shadeClash(p))n++}return n}
+/* plant height: 0 short, 1 medium, 2 tall (matters on shelves with different clearance) */
+const HEIGHT_RULES=[
+ [/microgreen/,0],
+ [/tomato|eggplant|pepper|sunflower|cucumber|pumpkin|\bbeans?\b|\bpeas?\b|collard|cauliflower|lemongrass|fennel|amaranth|eucalyptus|borage|celery|marigold|poppy|callaloo|malabar|lavender|rosemary|stevia|fenugreek|shiso/,2],
+ [/basil|kale|chard|cabbage|mint|catnip|lemon balm|sage|dill|parsley|cilantro|coriander|chives|leek|spring onion|tarragon|marjoram|oregano|broccoli|choi|mustard|dandelion|endive|radicchio|beet|turnip|arugula|rocket|sorrel|chamomile|baby.s breath|strawberry/,1],
+ [/lettuce|radish|tatsoi|thyme|spinach|watercress/,0]
+];
+const HEIGHT_WORD=['short','medium','tall'],HEIGHT_LET=['S','M','T'];
+function heightOf(c){
+  if(c.height===0||c.height===1||c.height===2)return c.height;
+  const n=((c.name||'')+' '+(c.variety||'')).toLowerCase();
+  for(const [re,g] of HEIGHT_RULES)if(re.test(n))return g;
+  return null;
+}
 function slotLbl(c){
   const L=/^lettuce$/i.test(c.name);
   if(L&&c.variety)return `<span class="lbl">${esc(c.variety)}</span>`;
@@ -505,11 +552,12 @@ function slotHtml(cid,i){
   if(!p)return `<button class="slot empty ${mv?'target':''}" data-act="slot" data-c="${cid}" data-i="${i}" aria-label="Empty slot ${i+1}">＋</button>`;
   const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
   const R=ringOf(p);
-  return `<button class="slot ring ${R.ph==='nurs'?'gz':''} ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color};--tc:${R.color}4d" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span></button>`;
+  const hg=ui.height?heightOf(c):null,sg=ui.light?shadeOf(c):null,cl=ui.light?shadeClash(p):null;
+  return `<button class="slot ring ${R.ph==='nurs'?'gz':''} ${cl?'clash':''} ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color};--tc:${R.color}4d" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span>${ui.light&&sg!=null?`<span class="sg g${sg}">${cl?'!':sg}</span>`:''}${hg!=null?`<span class="hg h${hg}">${HEIGHT_LET[hg]}</span>`:''}</button>`;
 }
 function gardenView(){
   const g=curGarden();
-  let h=`<div class="chips">${[['all','All'],['nursery','Nurseries'],['tray','Trays']].map(([k,l])=>`<button class="chip ${ui.kind===k?'on':''}" data-act="kind" data-k="${k}">${l}</button>`).join('')}<button class="chip ${ui.reorder?'on':''}" data-act="reorderToggle" style="margin-left:auto">↕ Reorder</button></div>`;
+  let h=`<div class="chips">${[['all','All'],['nursery','Nurseries'],['tray','Trays']].map(([k,l])=>`<button class="chip ${ui.kind===k?'on':''}" data-act="kind" data-k="${k}">${l}</button>`).join('')}<button class="chip ${ui.light?'on':''}" data-act="lightToggle" style="margin-left:auto">☀️ Light</button><button class="chip ${ui.height?'on':''}" data-act="heightToggle">📏 Height</button><button class="chip ${ui.reorder?'on':''}" data-act="reorderToggle">↕ Reorder</button></div>`;
   h+=wBar(g);
   if(!db.meta.lastBackup&&activeP().length>=3)h+=`<div class="warn">Your data lives only in this browser. Tap <b>More → Back up</b> now and then.</div>`;
   const secs=g.sections.filter(s=>ui.kind==='all'||s.kind===ui.kind);
@@ -549,7 +597,7 @@ function dueView(){
 
 function cropRows(){
   const list=cropList(ui.cq).sort((a,b)=>(b.fav-a.fav)||a.name.localeCompare(b.name)||a.variety.localeCompare(b.variety));
-  return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">${catOf(c)} · germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')||`<div class="empty-note">Nothing here - try "All".</div>`;
+  return list.map(c=>`<div class="card row2"><button class="fav" data-act="favCrop" data-id="${c.id}">${c.fav?'💛':'🤍'}</button><button class="grow1 row2" style="text-align:left" data-act="editCrop" data-id="${c.id}"><span class="big">${c.emoji}</span><span class="grow1"><b>${esc(c.name)}</b>${c.variety?' · '+esc(c.variety):''}<br><span class="sub">${catOf(c)}${shadeOf(c)!=null?' · ☀'+shadeOf(c):''}${heightOf(c)!=null?' · 📏'+HEIGHT_WORD[heightOf(c)]:''} · germinate ${c.germ}d · harvest ${c.harvest}d · ${c.yield} oz${c.cut?' · cut-and-regrow':''}</span></span></button></div>`).join('')||`<div class="empty-note">Nothing here - try "All".</div>`;
 }
 function cropsView(){
   const q=ui.cq;
@@ -643,7 +691,7 @@ const SHEETS={
    <div style="margin-top:8px"><span class="pill ${act?st:''}">${act?STAGE_LABEL[st]:p.status}</span> <span class="sub">${esc(locLabel(p))}</span></div>
    ${act?`<div class="bar"><i style="width:${pct}%"></i><b style="left:${gm}%"></b></div>
    <div class="row2 sub"><span>Day ${d}</span><span class="grow1" style="text-align:right">${d<c.harvest?`harvest in ${c.harvest-d}d (${nice(ready)})`:`harvestable since ${nice(ready)}`}</span></div>`:`<div class="sub" style="margin-top:6px">${nice(p.plantedAt)} → ${p.endedAt?nice(p.endedAt):'?'}</div>`}
-   ${act?(()=>{const R=ringOf(p),xp=xpDay(c),nur=inNursery(p);return `<div class="card" style="margin-top:8px;padding:8px 10px;font-size:13px"><div class="row2"><span class="grow1">🌱 Germination</span><span>${p.germinatedAt?'✓ '+nice(p.germinatedAt)+(nur?' <button class="btn sec small" style="padding:2px 8px;margin-left:6px" data-act="ungerminate">Undo</button>':''):'~'+nice(addDays(p.plantedAt,c.germ))+' (day '+c.germ+')'}</span></div>${nur||p.trayAt?`<div class="row2"><span class="grow1">🪴 Transplant</span><span>${p.trayAt?'✓ '+nice(p.trayAt):'~'+nice(addDays(p.plantedAt,xp))+' (day '+xp+')'}</span></div>`:''}<div class="row2"><span class="grow1">🧺 First harvest</span><span>~${nice(ready)} (day ${c.harvest})</span></div><div class="sub" style="margin-top:4px">Ring: ${R.tip}</div></div>`})():''}
+   ${act?(()=>{const R=ringOf(p),xp=xpDay(c),nur=inNursery(p);return `<div class="card" style="margin-top:8px;padding:8px 10px;font-size:13px"><div class="row2"><span class="grow1">🌱 Germination</span><span>${p.germinatedAt?'✓ '+nice(p.germinatedAt)+(nur?' <button class="btn sec small" style="padding:2px 8px;margin-left:6px" data-act="ungerminate">Undo</button>':''):'~'+nice(addDays(p.plantedAt,c.germ))+' (day '+c.germ+')'}</span></div>${nur||p.trayAt?`<div class="row2"><span class="grow1">🪴 Transplant</span><span>${p.trayAt?'✓ '+nice(p.trayAt):'~'+nice(addDays(p.plantedAt,xp))+' (day '+xp+')'}</span></div>`:''}<div class="row2"><span class="grow1">🧺 First harvest</span><span>~${nice(ready)} (day ${c.harvest})</span></div><div class="sub" style="margin-top:4px">Ring: ${R.tip}</div>${heightOf(c)!=null?`<div class="sub" style="margin-top:4px">📏 Height: ${HEIGHT_WORD[heightOf(c)]}</div>`:''}${(()=>{const g=shadeOf(c);if(g==null)return'';const cl=shadeClash(p);return `<div class="sub" style="margin-top:4px">☀️ Shade group ${g} - ${SHADE_WORD[g]}${cl?`<br><b style="color:#ff8a8a">⚠ Too close to ${[...new Set(cl.with.map(x=>x.name+(x.variety?' '+x.variety:'')))].join(', ')}</b>`:''}</div>`})()}</div>`})():''}
    <div class="sub" style="margin-top:4px">Planted ${niceY(p.plantedAt)} · ${p.germinatedAt?'germinated '+nice(p.germinatedAt):'germination not logged'}${p.lastHarvest?' · last harvest '+nice(p.lastHarvest):''}</div>
    ${act?`<div class="btns three" style="grid-template-columns:repeat(2,1fr)">
      ${(()=>{const nur=inNursery(p),needG=!p.germinatedAt&&nur,needM=!!p.germinatedAt&&nur;const G=`<button class="btn" data-act="germinated">🌱 Germinated</button>`,H=`<button class="btn ${needG||needM?'sec':''}" data-act="harvest">🧺 Harvest</button>`,M=`<button class="btn ${needM?'':'sec'}" data-act="startMove">↔️ Move</button>`;return needG?G+H+M:needM?M+H:H+M})()}
@@ -681,6 +729,8 @@ const SHEETS={
    <label>Transplant to tray (days after planting) - leave blank for auto</label><input type="number" inputmode="numeric" value="${c.xplant||''}" placeholder="auto (~${xpDay({...c,xplant:0})})" data-bind="cf" data-f="xplant" data-n="1">
    <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${c.cut?'checked':''} data-bind="cfcut"> Cut-and-regrow (harvest repeatedly)</label>
    <label>Harvest window after ready (days) - after this it shows "past harvest"</label><input type="number" inputmode="numeric" value="${c.window}" data-bind="cf" data-f="window" data-n="1">
+   <label>Shade group (Rise) - Auto uses the crop name</label><select data-bind="cfshade"><option value="">Auto${shadeOf({...c,shade:undefined})!=null?' (currently '+shadeOf({...c,shade:undefined})+')':''}</option>${[0,1,2].map(n=>`<option value="${n}" ${c.shade===n?'selected':''}>Group ${n} - ${SHADE_WORD[n]}</option>`).join('')}</select>
+   <label>Height - Auto uses the crop name</label><select data-bind="cfheight"><option value="">Auto${heightOf({...c,height:undefined})!=null?' (currently '+HEIGHT_WORD[heightOf({...c,height:undefined})]+')':''}</option>${[0,1,2].map(n=>`<option value="${n}" ${c.height===n?'selected':''}>${HEIGHT_WORD[n][0].toUpperCase()+HEIGHT_WORD[n].slice(1)}</option>`).join('')}</select>
    <label>Notes</label><input type="text" value="${esc(c.note||'')}" data-bind="cf" data-f="note">
    <div class="btns" style="grid-template-columns:${S.id?'1fr 2fr':'1fr'}">${S.id?`<button class="btn danger" data-act="delCrop">Delete</button>`:''}<button class="btn" data-act="saveCrop">Save</button></div>`;
  },
@@ -897,7 +947,9 @@ const acts={
  editSection(el){openSheet({type:'section',sid:el.dataset.s,newlay:'pods8'})},
  cropFilter(el){ui.cq.f=el.dataset.f;render()},
  pickFilter(el){S.f=el.dataset.f;renderSheet()},
- reorderToggle(){ui.reorder=!ui.reorder;if(ui.reorder)ui.moving=null;render()},
+ reorderToggle(){ui.reorder=!ui.reorder;if(ui.reorder){ui.moving=null;ui.light=false;ui.height=false}render()},
+ heightToggle(){ui.height=!ui.height;if(ui.height)ui.reorder=false;render()},
+ lightToggle(){ui.light=!ui.light;if(ui.light)ui.reorder=false;render()},
  moveSecD(el){
   const g=curGarden(),s=g.sections.find(x=>x.id===el.dataset.s),j=sibIdx(g,s,+el.dataset.d);if(j<0)return;
   mutate(()=>{const i=g.sections.indexOf(s);[g.sections[i],g.sections[j]]=[g.sections[j],g.sections[i]]});
@@ -994,6 +1046,8 @@ const binds={
  rreason(el){S.reason=el.value},
  pnote(el){const p=db.plantings.find(x=>x.id===S.pid);p.note=el.value;save()},
  cf(el){const d=S.draft,f=el.dataset.f;d[f]=el.dataset.n?num(el.value,0):el.value},
+ cfheight(el){if(el.value==='')delete S.draft.height;else S.draft.height=+el.value},
+ cfshade(el){if(el.value==='')delete S.draft.shade;else S.draft.shade=+el.value},
  cfcut(el){S.draft.cut=el.checked;if(el.checked&&S.draft.window<60)S.draft.window=90;renderSheet()},
  sname(el){const s=curGarden().sections.find(x=>x.id===S.sid);if(el.value.trim()){s.name=el.value;save();render()}},
  cname(el){const c=locOf(el.dataset.id).c;c.name=el.value;save();render()},
