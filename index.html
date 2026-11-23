@@ -54,7 +54,7 @@ main{padding:12px 14px}
 .slot .hg.tall{background:#ff5d5d;color:#fff}
 .slot .hg{background:#a9d6ff;position:absolute;bottom:-3px;left:-3px;min-width:16px;height:16px;border-radius:8px;font-size:10px;font-weight:700;line-height:16px;text-align:center;color:#10201f;border:1.5px solid var(--bg);padding:0 2px}
 .slot.clash{outline:3px dashed #ff5d5d;outline-offset:2px}
-.slot.clash .sg{background:#ff5d5d;color:#fff}
+.slot .sg.bad{background:#ff5d5d;color:#fff}
 .chip.water{margin-left:auto;padding:4px 10px;font-size:13px}
 .chip.water.soon{border-color:var(--gold);color:var(--gold)}
 .chip.water.late{border-color:var(--orange);color:var(--orange);background:#432c20}
@@ -571,7 +571,7 @@ function slotHtml(cid,i){
   const c=crop(p.cropId),st=stageOf(p),d=days(p.plantedAt);
   const R=ringOf(p);
   const hg=ui.height?heightOf(c):null,sg=ui.light?shadeOf(c):null,cl=ui.light?shadeClash(p):null;
-  return `<button class="slot ring ${R.ph==='nurs'?'gz':''} ${cl||(ui.height&&tooTall(p))?'clash':''} ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color};--tc:${R.color}4d" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span>${ui.light&&sg!=null?`<span class="sg g${sg}">${cl?'!':sg}</span>`:''}${hg!=null?`<span class="hg ${tooTall(p)?'tall':''}">${hg}"</span>`:''}</button>`;
+  return `<button class="slot ring ${R.ph==='nurs'?'gz':''} ${cl||(ui.height&&tooTall(p))?'clash':''} ${st} ${mv&&mv.id===p.id?'moving':''} ${mv&&mv.id!==p.id?'target':''}" style="--p:${R.pct.toFixed(1)};--rc:${R.color};--tc:${R.color}4d" title="${R.tip}" data-act="slot" data-c="${cid}" data-i="${i}"><span class="em">${c.emoji}</span>${slotLbl(c)}<span class="dd">D${d}</span>${ui.light&&sg!=null?`<span class="sg g${sg} ${cl?'bad':''}">${sg}</span>`:''}${hg!=null?`<span class="hg ${tooTall(p)?'tall':''}">${hg}"</span>`:''}</button>`;
 }
 function gardenView(){
   const g=curGarden();
