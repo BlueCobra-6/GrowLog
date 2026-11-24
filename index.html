@@ -524,7 +524,7 @@ const SHADE_RULES=[
  [/peppermint|mojito/,1],
  [/tomato|eggplant|pepper|cauliflower|collard|sunflower|cucumber|pumpkin/,2],
  [/\bbasil|\bbeans?\b|\bpeas?\b|kale|cabbage|catnip|celery|shiso|watercress|lemon balm|durango|marigold|strawberry|chard|malabar|eucalyptus|baby.s breath|raab|borage|poppy|\bmint/,1],
- [/lettuce|radish|beet|arugula|rocket|tatsoi|mustard|choi|parsley|cilantro|coriander|dandelion|dill|endive|fennel|amaranth|marjoram|rosemary|sage|sorrel|stevia|tarragon|thyme|turnip|oregano|radicchio|chamomile|chinese broccoli|chives|spring onion|bunching onion|fenugreek|lavender|lemongrass|spinach|leek/,0]
+ [/lettuce|radish|beet|arugula|rocket|tatsoi|mustard|choi|parsley|cilantro|coriander|dandelion|dill|endive|fennel|amaranth|marjoram|rosemary|sage|sorrel|stevia|tarragon|thyme|turnip|oregano|radicchio|chamomile|chinese broccoli|chives|spring onion|bunching|fenugreek|lavender|lemongrass|spinach|leek/,0]
 ];
 function shadeOf(c){
   if(c.shade===0||c.shade===1||c.shade===2)return c.shade;
@@ -551,7 +551,7 @@ const HEIGHT_RULES=[
  [/dill|catnip|tarragon|broccoli|stevia|fenugreek|celery|baby.s breath/,18],
  [/kale|chard|lemon balm|sage|chamomile|leek/,14],
  [/basil|cabbage|mint|cilantro|coriander|marigold/,12],
- [/parsley|chives|spring onion|bunching onion|marjoram|oregano|mustard|beet|turnip|sorrel/,10],
+ [/parsley|chives|spring onion|bunching|marjoram|oregano|mustard|beet|turnip|sorrel/,10],
  [/arugula|rocket|choi|strawberry|dandelion|endive|radicchio/,8],
  [/lettuce|radish|tatsoi|thyme|spinach|watercress/,6]
 ];
@@ -676,7 +676,7 @@ const CATS=['Herb','Lettuce','Leafy green','Fruiting','Root & other veg','Flower
 function catOf(c){if(c.cat)return c.cat;const n=(c.name||'').toLowerCase();
  if(/microgreen/.test(n))return'Microgreen';
  if(/^(lettuce|endive)/.test(n))return'Lettuce';
- if(/basil|cilantro|coriander|parsley|dill|chive|spring onion|bunching onion|mint|balm|catnip|thyme|oregano|rosemary|sage|tarragon|sorrel|borage|chamomile|lavender/.test(n))return(/borage|chamomile|lavender/.test(n)?'Herb':'Herb');
+ if(/basil|cilantro|coriander|parsley|dill|chive|spring onion|bunching|mint|balm|catnip|thyme|oregano|rosemary|sage|tarragon|sorrel|borage|chamomile|lavender/.test(n))return(/borage|chamomile|lavender/.test(n)?'Herb':'Herb');
  if(/sunflower|marigold|baby.s breath|poppy|flower/.test(n))return'Flower';
  if(/tomato|pepper|eggplant|strawberry|cucumber|pumpkin|pea\b|bean/.test(n))return'Fruiting';
  if(/radish|beet|turnip|cauliflower|celery|leek/.test(n))return'Root & other veg';
