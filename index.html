@@ -190,7 +190,7 @@ function wBar(g){
 }
 function wlogCsv(g){
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`,u=g.tUnit||'F';
-  const rows=[['date','pH','EC_mS_cm','temp_'+u,'ORP_mV','water_added_'+(g.vUnit||'gal'),'water_changed','note'],...wLog(g).slice().reverse().map(e=>[e.d,e.ph??'',e.ec??'',e.t!=null?fnum(cToU(e.t,u)):'',e.orp??'',e.vol!=null?fnum(lToU(e.vol,g.vUnit||'gal'),2):'',e.chg?'yes':'',e.note||''])];
+  const rows=[['date','pH','EC_mS_cm','TDS500_ppm','TDS700_ppm','temp_'+u,'ORP_mV','water_added_'+(g.vUnit||'gal'),'water_changed','note'],...wLog(g).slice().reverse().map(e=>[e.d,e.ph??'',e.ec??'',e.p5??'',e.p7??'',e.t!=null?fnum(cToU(e.t,u)):'',e.orp??'',e.vol!=null?fnum(lToU(e.vol,g.vUnit||'gal'),2):'',e.chg?'yes':'',e.note||''])];
   return rows.map(r=>r.map(q).join(',')).join('\n');
 }
 const GRID=/^g:(\d+)x(\d+)$/;
@@ -784,18 +784,19 @@ const SHEETS={
  },
  wlog(){
   const g=db.gardens.find(x=>x.id===S.gid);if(!g)return'<h2>Gone</h2>';
-  const u=g.tUnit||'F',vu=g.vUnit||'gal',f=S.f||(S.f={d:today(),ph:'',ec:'',t:'',orp:'',vol:'',chg:false,note:''}),w=wInfo(g),use=wUse(g);
+  const u=g.tUnit||'F',vu=g.vUnit||'gal',f=S.f||(S.f={d:today(),ph:'',ec:'',p5:'',p7:'',t:'',orp:'',vol:'',chg:false,note:''}),w=wInfo(g),use=wUse(g);
   const hist=wLog(g).slice(0,12);
   return `<h2>💧 ${esc(g.name)} - water log</h2>
    <div class="card" style="font-size:14px"><div class="row2"><span class="grow1">Last water change</span><span>${w.base?nice(w.base):'-'}</span></div><div class="row2"><span class="grow1">Next change</span><span>${w.base?`<b>${nice(w.due)}</b> · ${waterLbl(w.left)}`:'log a change to start'}</span></div><div class="row2"><span class="grow1">Water use (top-offs, 30d)</span><span>${use?`<b>${fnum(use.rate,use.u==='L'?1:2)} ${use.u}/day</b>`:'<span class="sub">needs 2+ top-offs</span>'}</span></div></div>
    <div class="two"><div><label>pH</label><input type="number" inputmode="decimal" step="0.1" value="${f.ph}" data-bind="wf" data-k="ph"></div><div><label>EC (mS/cm)</label><input type="number" inputmode="decimal" step="0.01" value="${f.ec}" data-bind="wf" data-k="ec"></div></div>
+   <div class="two"><div><label>TDS 500 (ppm)</label><input type="number" inputmode="numeric" step="1" value="${f.p5??''}" data-bind="wf" data-k="p5"></div><div><label>TDS 700 (ppm)</label><input type="number" inputmode="numeric" step="1" value="${f.p7??''}" data-bind="wf" data-k="p7"></div></div>
    <div class="two"><div><label>Water temp (°${u})</label><input type="number" inputmode="decimal" step="0.1" value="${f.t}" data-bind="wf" data-k="t"></div><div><label>ORP (mV)</label><input type="number" inputmode="decimal" step="1" value="${f.orp}" data-bind="wf" data-k="orp"></div></div>
    <div class="two"><div><label>Water added (${vu})</label><input type="number" inputmode="decimal" step="0.1" value="${f.vol}" data-bind="wf" data-k="vol"></div><div><label>Date</label><input type="date" value="${f.d}" max="${today()}" data-bind="wf" data-k="d"></div></div>
    <label>Note</label><input type="text" value="${esc(f.note)}" placeholder="optional" data-bind="wf" data-k="note">
    <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" style="width:auto" ${f.chg?'checked':''} data-bind="wchg"> Water was changed</label>
    <div style="margin-top:10px"><button class="btn" data-act="wSave">Save reading</button></div>
    <label>History</label>
-   ${hist.length?hist.map(e=>`<div class="card row2" style="padding:8px 10px;font-size:13px"><span class="grow1"><b>${nice(e.d)}</b>${e.chg?' 💧':''}<br><span class="sub">${[e.ph!=null?'pH '+fnum(e.ph):'',e.ec!=null?'EC '+fnum(e.ec,2):'',e.t!=null?fnum(cToU(e.t,u),0)+'°'+u:'',e.orp!=null?fnum(e.orp,0)+' mV':'',e.vol>0?'+'+fnum(lToU(e.vol,vu),vu==='L'?1:2)+' '+vu:'',e.note?esc(e.note):''].filter(Boolean).join(' · ')||'(no readings)'}</span></span><button class="btn sec small" data-act="wDel" data-id="${e.id}" aria-label="Delete entry">✕</button></div>`).join(''):'<div class="sub">No entries yet.</div>'}
+   ${hist.length?hist.map(e=>`<div class="card row2" style="padding:8px 10px;font-size:13px"><span class="grow1"><b>${nice(e.d)}</b>${e.chg?' 💧':''}<br><span class="sub">${[e.ph!=null?'pH '+fnum(e.ph):'',e.ec!=null?'EC '+fnum(e.ec,2):'',e.p5!=null?fnum(e.p5,0)+' ppm (500)':'',e.p7!=null?fnum(e.p7,0)+' ppm (700)':'',e.t!=null?fnum(cToU(e.t,u),0)+'°'+u:'',e.orp!=null?fnum(e.orp,0)+' mV':'',e.vol>0?'+'+fnum(lToU(e.vol,vu),vu==='L'?1:2)+' '+vu:'',e.note?esc(e.note):''].filter(Boolean).join(' · ')||'(no readings)'}</span></span><button class="btn sec small" data-act="wDel" data-id="${e.id}" aria-label="Delete entry">✕</button></div>`).join(''):'<div class="sub">No entries yet.</div>'}
    <label>Change water every (days)</label><input type="number" inputmode="numeric" min="1" max="90" value="${w.every}" data-bind="wevery2">
    <label>Volume unit</label><select data-bind="wvunit"><option value="gal" ${vu==='gal'?'selected':''}>gallons</option><option value="L" ${vu==='L'?'selected':''}>liters</option></select>
    <label>Temperature unit</label><select data-bind="wunit"><option value="F" ${u==='F'?'selected':''}>°F</option><option value="C" ${u==='C'?'selected':''}>°C</option></select>
@@ -884,8 +885,8 @@ const acts={
  wlogSheet(){openSheet({type:'wlog',gid:curGarden().id})},
  wSave(){
   const g=db.gardens.find(x=>x.id===S.gid),f=S.f,u=g.tUnit||'F',n=v=>v===''||v==null||isNaN(+v)?null:+v;
-  const e={id:uid(),d:f.d||today(),ph:n(f.ph),ec:n(f.ec),t:n(f.t)==null?null:+uToC(+f.t,u).toFixed(2),orp:n(f.orp),vol:n(f.vol)==null?null:+uToL(+f.vol,g.vUnit||'gal').toFixed(3),chg:!!f.chg,note:(f.note||'').trim()};
-  if(e.ph==null&&e.ec==null&&e.t==null&&e.orp==null&&e.vol==null&&!e.chg){toast('Enter a reading or tick "Water was changed"');return}
+  const e={id:uid(),d:f.d||today(),ph:n(f.ph),ec:n(f.ec),p5:n(f.p5),p7:n(f.p7),t:n(f.t)==null?null:+uToC(+f.t,u).toFixed(2),orp:n(f.orp),vol:n(f.vol)==null?null:+uToL(+f.vol,g.vUnit||'gal').toFixed(3),chg:!!f.chg,note:(f.note||'').trim()};
+  if(e.ph==null&&e.ec==null&&e.p5==null&&e.p7==null&&e.t==null&&e.orp==null&&e.vol==null&&!e.chg){toast('Enter a reading or tick "Water was changed"');return}
   mutate(()=>{g.wlog=g.wlog||[];g.wlog.push(e)});S.f=null;toast('Saved');renderSheet();
  },
  wDel(el){const g=db.gardens.find(x=>x.id===S.gid);mutate(()=>{g.wlog=(g.wlog||[]).filter(e=>e.id!==el.dataset.id)});renderSheet()},
